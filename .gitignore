@@ -1,0 +1,35 @@
+# Ansible Vault password files
+.vault_pass*
+*vault_pass*
+*vault-password*
+
+# Ansible runtime files
+*.retry
+.ansible/
+fact_cache/
+
+# Kubeconfig (fetched from k3s)
+kubeconfig*
+*.kubeconfig
+k3s.yaml
+
+# Environment files
+.env
+.env.*
+
+# Keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
