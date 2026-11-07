@@ -1,37 +1,53 @@
-# project-atmos-onprem-provision
+# project-atmos-onprem-ansible
 
-Ansible configuration for the on-premise platform of Project Atmos.
+Ansible for the on-premise platform of **Project Atmos**: creates the servers in VirtualBox and configures everything inside them.
 
-## Purpose
+```text
+Admin machine (WSL2: Ansible)
+ ├─ VBoxManage ─► creates the VMs
+ └─ SSH ────────► tools   Docker, Nexus, Jenkins, Traefik
+                  k8s-cp  k3s server
+                  k8s-w1  k3s agent
+```
 
-Configures the three virtual machines from the admin machine over SSH:
+## Contents
 
-| VM | Role |
+| Path | What it does |
 |---|---|
-| `tools` | Jenkins, Docker, Nexus, Traefik (reverse proxy) |
-| `k8s-cp` | k3s server |
-| `k8s-w1` | k3s agent |
+| `inventory/` | Servers with fixed addresses, plus `localhost` for host tasks |
+| `group_vars/` | VM resources, pinned versions, secrets in Ansible Vault |
+| `roles/virtualbox_vm/` | Creates the VM, installs Ubuntu, network, `clean` snapshot |
+| `roles/common/` | Base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries |
+| `roles/docker/`, `nexus/`, `jenkins/`, `traefik/` | CI server `tools`: registry, Jenkins, HTTPS entry point |
+| `roles/k3s/` | k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
+| `vms.yml` · `site.yml` · `stop.yml` | Create and start · configure · stop safely |
 
-The VMs are created by hand (Ubuntu Server 24.04 LTS). This repository only configures them.
+## Usage
 
-## Planned content
+Prerequisite (the only manual step): VirtualBox, WSL2 and Ansible on the host computer.
 
-- `inventory/` — hosts and groups
-- `group_vars/` — pinned versions and settings; secrets encrypted with Ansible Vault
-- `roles/` — `common` (`ufw`, node-exporter), `k3s`, `docker`, `nexus`, `jenkins`, `traefik`
-- `site.yml` — configures all VMs
-- `stop.yml` — stops the VMs in the right order
+```bash
+ansible-playbook vms.yml  --ask-vault-pass   # create and start the servers
+ansible-playbook site.yml --ask-vault-pass   # configure all servers
+ansible-playbook stop.yml                    # stop: k8s-w1 → k8s-cp → tools
+```
+
+Running `site.yml` again changes nothing on a correct server.
+
+## Rebuild
+
+Restore the `clean` snapshots (or run `vms.yml`) and run `site.yml`. Then follow the manual steps in [architecture.md](https://github.com/Kernel-Club/project-atmos-dev/blob/develop/docs/on-premise/architecture.md) (section 2): Jenkins credentials and job, first build, Flux bootstrap, Kubernetes Secrets.
 
 ## Secrets
 
-Secrets are stored only encrypted with Ansible Vault. The vault password file, kubeconfig, SSH keys and `.env` files are never committed (see `.gitignore`).
+Platform passwords are stored only encrypted with Ansible Vault. The vault password, kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
 
-## Related repositories
+## Related
 
-- [project-atmos-dev](https://github.com/Kernel-Club/project-atmos-dev) — application and architecture docs (`docs/on-premise/`)
-- [project-atmos-onprem-jenkins](https://github.com/Kernel-Club/project-atmos-onprem-jenkins) — CI pipeline
-- [project-atmos-onprem-gitops](https://github.com/Kernel-Club/project-atmos-onprem-gitops) — Flux and the Helm chart
+| Repository | Role |
+|---|---|
+| [project-atmos-dev](https://github.com/Kernel-Club/project-atmos-dev) | Application and on-premise docs (`docs/on-premise/`) |
+| [project-atmos-onprem-jenkins](https://github.com/Kernel-Club/project-atmos-onprem-jenkins) | CI pipeline |
+| [project-atmos-onprem-k3s](https://github.com/Kernel-Club/project-atmos-onprem-k3s) | Everything inside the cluster: Helm chart, Flux, monitoring |
 
-## Branching
-
-`main` is the current platform configuration. Changes go through `feature/*` or `fix/*` branches and a Pull Request to `main`. See `docs/on-premise/branching-model.md` in `project-atmos-dev`.
+Branching: `main` + `feature/*` / `fix/*` with a Pull Request ([branching model](https://github.com/Kernel-Club/project-atmos-dev/blob/develop/docs/on-premise/branching-model.md)).
