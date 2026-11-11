@@ -1,53 +1,56 @@
-# project-atmos-onprem-ansible
+# atmos-ansible
 
-Ansible for the on-premise platform of **Project Atmos**: creates the servers in VirtualBox and configures everything inside them.
+Vagrant and Ansible for the on-premise platform of **Atmos**: creates the servers in VirtualBox and configures everything inside them.
 
 ```text
-Admin machine (WSL2: Ansible)
- ├─ VBoxManage ─► creates the VMs
- └─ SSH ────────► tools   Docker, Nexus, Jenkins, Traefik
-                  k8s-cp  k3s server
-                  k8s-w1  k3s agent
+Mac (admin: Git, Ansible)
+ ├─ SSH ─► host PC (Windows: VirtualBox, Vagrant) ─► vagrant up: creates the VMs
+ └─ SSH ─► nexus-traefik  Docker, Nexus, Traefik
+           jenkins        Docker, Jenkins
+           k8s-cp         k3s server
+           k8s-w1         k3s agent
 ```
 
 ## Contents
 
 | Path | What it does |
 |---|---|
-| `inventory/` | Servers with fixed addresses, plus `localhost` for host tasks |
-| `group_vars/` | VM resources, pinned versions, secrets in Ansible Vault |
-| `roles/virtualbox_vm/` | Creates the VM, installs Ubuntu, network, `clean` snapshot |
-| `roles/common/` | Base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries |
-| `roles/docker/`, `nexus/`, `jenkins/`, `traefik/` | CI server `tools`: registry, Jenkins, HTTPS entry point |
-| `roles/k3s/` | k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
-| `vms.yml` · `site.yml` · `stop.yml` | Create and start · configure · stop safely |
+| `Vagrantfile` | The four VMs: box, CPU, RAM, disk, fixed addresses, SSH key of the Mac |
+| `inventory/` | Servers with fixed addresses, plus `localhost` (the Mac) for `/etc/hosts` |
+| `group_vars/` | Pinned versions, secrets in Ansible Vault |
+| `roles/common/` | All servers: base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries, swap file outside the cluster |
+| `roles/docker/` | `nexus-traefik`, `jenkins` |
+| `roles/nexus/`, `roles/traefik/` | `nexus-traefik`: image registry, HTTPS entry point |
+| `roles/jenkins/` | `jenkins`: CI server |
+| `roles/k3s/` | `k8s-cp`, `k8s-w1`: k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
+| `site.yml` | Configures all servers |
 
 ## Usage
 
-Prerequisite (the only manual step): VirtualBox, WSL2 and Ansible on the host computer.
+Manual once: VirtualBox, Vagrant and the OpenSSH server on the host PC, with a clone of this repository there (only `git pull`, all changes on the Mac); Ansible on the Mac. `atmos-host` is the SSH alias of the PC.
 
 ```bash
-ansible-playbook vms.yml  --ask-vault-pass   # create and start the servers
-ansible-playbook site.yml --ask-vault-pass   # configure all servers
-ansible-playbook stop.yml                    # stop: k8s-w1 → k8s-cp → tools
+ssh atmos-host "cd atmos-ansible && git pull && vagrant up"      # create and start the servers
+ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure all servers (from the Mac)
+ssh atmos-host "cd atmos-ansible && vagrant halt k8s-w1 k8s-cp jenkins nexus-traefik"   # stop safely
 ```
 
-Running `site.yml` again changes nothing on a correct server.
+Running `site.yml` again changes nothing on a correct server. `vagrant halt jenkins` stops only CI; the application keeps running.
 
 ## Rebuild
 
-Restore the `clean` snapshots (or run `vms.yml`) and run `site.yml`. Then follow the manual steps in [architecture.md](https://github.com/Kernel-Club/project-atmos-dev/blob/develop/docs/on-premise/architecture.md) (section 2): Jenkins credentials and job, first build, Flux bootstrap, Kubernetes Secrets.
+Restore the `clean` snapshots (or `vagrant destroy` and `vagrant up`) and run `site.yml`. Then follow the manual steps in [architecture.md](https://github.com/Kernel-Club/atmos-dev/blob/develop/docs/on-premise/architecture.md) (section 2): Jenkins credentials and job, first build, Flux bootstrap, Kubernetes Secrets. After a rebuild of `jenkins` alone, set Next Build Number of the job above the highest tag in Nexus.
 
 ## Secrets
 
-Platform passwords are stored only encrypted with Ansible Vault. The vault password, kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
+Platform passwords are stored only encrypted with Ansible Vault. The vault password stays on the Mac; kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
 
 ## Related
 
 | Repository | Role |
 |---|---|
-| [project-atmos-dev](https://github.com/Kernel-Club/project-atmos-dev) | Application and on-premise docs (`docs/on-premise/`) |
-| [project-atmos-onprem-jenkins](https://github.com/Kernel-Club/project-atmos-onprem-jenkins) | CI pipeline |
-| [project-atmos-onprem-k3s](https://github.com/Kernel-Club/project-atmos-onprem-k3s) | Everything inside the cluster: Helm chart, Flux, monitoring |
+| [atmos-dev](https://github.com/Kernel-Club/atmos-dev) | Application and on-premise docs (`docs/on-premise/`) |
+| [atmos-jenkins](https://github.com/Kernel-Club/atmos-jenkins) | CI pipeline |
+| [atmos-k8s](https://github.com/Kernel-Club/atmos-k8s) | Everything inside the cluster: Helm chart, Flux, monitoring |
 
-Branching: `main` + `feature/*` / `fix/*` with a Pull Request ([branching model](https://github.com/Kernel-Club/project-atmos-dev/blob/develop/docs/on-premise/branching-model.md)).
+Branching: `main` + `feature/*` / `fix/*` with a Pull Request ([branching model](https://github.com/Kernel-Club/atmos-dev/blob/develop/docs/on-premise/branching-model.md)).
