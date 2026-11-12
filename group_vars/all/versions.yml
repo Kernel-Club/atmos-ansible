@@ -1,0 +1,4 @@
+# Versions of the tools that Ansible installs on the servers.
+# A rebuild gives the same result.
+
+node_exporter_version: "1.12.1"
