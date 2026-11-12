@@ -11,8 +11,9 @@ BRIDGE = "ASIX USB to Gigabit Ethernet Family Adapter"
 ADMIN_PUBLIC_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAz+drwdDbiESoXZssfmob3fEpiEsLdXGuTmo7fREeLO atmos-admin"
 
 # The order of this list is the start order of `vagrant up`.
+# Every VM needs at least 2 vCPUs: with one vCPU the box kernel hangs early in boot.
 SERVERS = [
-  { name: "nexus-traefik", ip: "192.168.0.53", cpus: 1, memory: 3072 },
+  { name: "nexus-traefik", ip: "192.168.0.53", cpus: 2, memory: 3072 },
   { name: "jenkins",       ip: "192.168.0.54", cpus: 2, memory: 2560 },
   { name: "k8s-cp",        ip: "192.168.0.51", cpus: 2, memory: 2560 },
   { name: "k8s-w1",        ip: "192.168.0.52", cpus: 2, memory: 3584 },
