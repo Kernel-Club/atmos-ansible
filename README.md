@@ -32,6 +32,7 @@ Mac (admin: Git, Ansible)
 | Host PC (Windows 11) | VirtualBox 7.2.22 and Vagrant 2.4.9, pinned with `winget pin` |
 | Host PC | Memory Integrity (Core isolation) off and `bcdedit /set hypervisorlaunchtype off`, so VirtualBox runs without the Windows hypervisor |
 | Host PC | OpenSSH Server: key login only (`PasswordAuthentication no`), firewall rule for port 22 only from the Mac, network profile Private |
+| Host PC | VirtualBox machine folder on drive D: (`VBoxManage setproperty machinefolder "D:\VirtualBox VMs"`); VM disks are dynamic, 64 GB each |
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
 | Mac | SSH key `~/.ssh/atmos_admin` and the alias `atmos-host` for the host PC in `~/.ssh/config` |
