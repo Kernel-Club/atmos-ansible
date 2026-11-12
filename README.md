@@ -15,7 +15,7 @@ Mac (admin: Git, Ansible)
 
 | Path | What it does |
 |---|---|
-| `Vagrantfile` | The four VMs: box, CPU, RAM, disk, fixed addresses, SSH key of the Mac |
+| `Vagrantfile` | The four VMs: pinned box, CPU, RAM, fixed addresses, SSH key of the Mac, start order |
 | `inventory/` | Servers with fixed addresses, plus `localhost` (the Mac) for `/etc/hosts` |
 | `group_vars/` | Pinned versions, secrets in Ansible Vault |
 | `roles/common/` | All servers: base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries, swap file outside the cluster |
@@ -44,7 +44,9 @@ ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure al
 ssh atmos-host "cd atmos-ansible && vagrant halt k8s-w1 k8s-cp jenkins nexus-traefik"   # stop safely
 ```
 
-Running `site.yml` again changes nothing on a correct server. `vagrant halt jenkins` stops only CI; the application keeps running.
+Running `site.yml` again changes nothing on a correct server.
+
+**Memory:** about 10.6 GB of the host PC are available for the servers (Windows keeps about 5.2 GB). The application needs only `nexus-traefik`, `k8s-cp` and `k8s-w1` (9 GB), so `jenkins` runs only for CI: `vagrant up jenkins` before a build, `vagrant halt jenkins` after it. With all four servers (11.5 GB) Windows uses its page file: builds are slower, but they finish.
 
 ## Rebuild
 

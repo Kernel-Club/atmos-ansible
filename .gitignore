@@ -3,6 +3,9 @@
 *vault_pass*
 *vault-password*
 
+# Vagrant machine state and generated private keys
+.vagrant/
+
 # Ansible runtime files
 *.retry
 .ansible/
