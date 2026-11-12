@@ -25,9 +25,18 @@ Mac (admin: Git, Ansible)
 | `roles/k3s/` | `k8s-cp`, `k8s-w1`: k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
 | `site.yml` | Configures all servers |
 
-## Usage
+## Prerequisites (manual, once)
 
-Manual once: VirtualBox, Vagrant and the OpenSSH server on the host PC, with a clone of this repository there (only `git pull`, all changes on the Mac); Ansible on the Mac. `atmos-host` is the SSH alias of the PC.
+| Where | What |
+|---|---|
+| Host PC (Windows 11) | VirtualBox 7.2.22 and Vagrant 2.4.9, pinned with `winget pin` |
+| Host PC | Memory Integrity (Core isolation) off and `bcdedit /set hypervisorlaunchtype off`, so VirtualBox runs without the Windows hypervisor |
+| Host PC | OpenSSH Server: key login only (`PasswordAuthentication no`), firewall rule for port 22 only from the Mac, network profile Private |
+| Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
+| Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
+| Mac | SSH key `~/.ssh/atmos_admin` and the alias `atmos-host` for the host PC in `~/.ssh/config` |
+
+## Usage
 
 ```bash
 ssh atmos-host "cd atmos-ansible && git pull && vagrant up"      # create and start the servers
