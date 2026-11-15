@@ -5,7 +5,7 @@ BOX         = "bento/ubuntu-24.04"
 BOX_VERSION = "202510.26.0"
 
 # Host PC adapter for the bridged network (VBoxManage list bridgedifs).
-BRIDGE = "ASIX USB to Gigabit Ethernet Family Adapter"
+BRIDGE = "Realtek Gaming 2.5GbE Family Controller"
 
 # Public key of the Mac (admin machine). Ansible logs in with this key.
 ADMIN_PUBLIC_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAz+drwdDbiESoXZssfmob3fEpiEsLdXGuTmo7fREeLO atmos-admin"

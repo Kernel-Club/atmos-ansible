@@ -47,7 +47,7 @@ ssh atmos-host "cd atmos-ansible && vagrant halt k8s-w1 k8s-cp jenkins nexus-tra
 
 Running `site.yml` again changes nothing on a correct server.
 
-**Memory:** about 10.6 GB of the host PC are available for the servers (Windows keeps about 5.2 GB). The application needs only `nexus-traefik`, `k8s-cp` and `k8s-w1` (9 GB), so `jenkins` runs only for CI: `vagrant up jenkins` before a build, `vagrant halt jenkins` after it. With all four servers (11.5 GB) Windows uses its page file: builds are slower, but they finish.
+**Memory:** the host has about 11 GB available for the servers. The four servers are allocated 11.5 GB, plus about 0.6 GB of VirtualBox overhead; the remaining ~1 GB is served from the host page file (SSD).
 
 ## Rebuild
 
