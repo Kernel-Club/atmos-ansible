@@ -1,0 +1,8 @@
+# Names of the platform in the home network. There is no DNS server,
+# so Ansible writes them to /etc/hosts. The address is taken from the inventory.
+
+lan_names:
+  - host: k8s-w1            # Traefik in the cluster
+    names: [atmos.lan, grafana.atmos.lan]
+  - host: nexus-traefik     # Traefik in front of Jenkins and Nexus
+    names: [jenkins.atmos.lan, nexus.atmos.lan]

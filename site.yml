@@ -1,0 +1,15 @@
+# Configures the Atmos on-premise platform. Run from the Mac:
+#   ansible-playbook site.yml --ask-vault-pass --ask-become-pass
+
+- name: Mac - names of the platform
+  hosts: admin
+  become: true
+  tasks:
+    - name: Add the *.atmos.lan names to /etc/hosts
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ATMOS (managed by Ansible)"
+        block: |
+          {% for entry in lan_names %}
+          {{ hostvars[entry.host].ansible_host }} {{ entry.names | join(' ') }}
+          {% endfor %}
