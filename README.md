@@ -35,17 +35,20 @@ Mac (admin: Git, Ansible)
 | Host PC | VirtualBox machine folder on drive D: (`VBoxManage setproperty machinefolder "D:\VirtualBox VMs"`); VM disks are dynamic, 64 GB each |
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
-| Mac | SSH key `~/.ssh/atmos_admin` and the alias `atmos-host` for the host PC in `~/.ssh/config` |
+| Mac | SSH key `~/.ssh/atmos_admin` for the host PC and the servers |
 
 ## Usage
 
 ```bash
-ssh atmos-host "cd atmos-ansible && git pull && vagrant up"      # create and start the servers
-ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure all servers (from the Mac)
-ssh atmos-host "cd atmos-ansible && vagrant halt k8s-w1 k8s-cp jenkins nexus-traefik"   # stop safely
+# Host PC, in the repository folder (over SSH from the Mac)
+git pull && vagrant up                                            # create and start the servers
+vagrant halt k8s-w1 && vagrant halt k8s-cp && vagrant halt jenkins && vagrant halt nexus-traefik   # stop in reverse order
+
+# Mac
+ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure all servers
 ```
 
-Running `site.yml` again changes nothing on a correct server.
+Running `site.yml` again changes nothing on a correct server. `vagrant halt` with several names stops them in Vagrantfile order, so the reverse order needs one call per server.
 
 **Memory:** the host has about 11 GB available for the servers. The four servers are allocated 11.5 GB, plus about 0.6 GB of VirtualBox overhead; the remaining ~1 GB is served from the host page file (SSD).
 
