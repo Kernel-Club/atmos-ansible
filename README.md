@@ -5,8 +5,8 @@ Vagrant and Ansible for the on-premise platform of **Atmos**: creates the server
 ```text
 Mac (admin: Git, Ansible)
  ├─ SSH ─► host PC (Windows: VirtualBox, Vagrant) ─► vagrant up: creates the VMs
- └─ SSH ─► nexus-traefik  Docker, Nexus, Traefik
-           jenkins        Docker, Jenkins
+ └─ SSH ─► nexus-traefik  Docker Compose: Nexus, Traefik
+           jenkins        Docker Compose: Jenkins
            k8s-cp         k3s server
            k8s-w1         k3s agent
 ```
@@ -19,9 +19,9 @@ Mac (admin: Git, Ansible)
 | `inventory/` | Servers with fixed addresses, plus `localhost` (the Mac) for `/etc/hosts` |
 | `group_vars/` | Pinned versions, secrets in Ansible Vault |
 | `roles/common/` | All servers: base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries, swap file outside the cluster |
-| `roles/docker/` | `nexus-traefik`, `jenkins` |
-| `roles/nexus/`, `roles/traefik/` | `nexus-traefik`: image registry, HTTPS entry point |
-| `roles/jenkins/` | `jenkins`: CI server |
+| `roles/docker/` | `nexus-traefik`, `jenkins`: Docker Engine and the Compose plugin |
+| `roles/nexus/`, `roles/traefik/` | `nexus-traefik`: image registry, HTTPS entry point (Compose services) |
+| `roles/jenkins/` | `jenkins`: CI server (Compose service) |
 | `roles/k3s/` | `k8s-cp`, `k8s-w1`: k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
 | `site.yml` | Configures all servers |
 
@@ -48,7 +48,7 @@ vagrant halt k8s-w1 && vagrant halt k8s-cp && vagrant halt jenkins && vagrant ha
 ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure all servers
 ```
 
-Running `site.yml` again changes nothing on a correct server. `vagrant halt` with several names stops them in Vagrantfile order, so the reverse order needs one call per server.
+On `nexus-traefik` and `jenkins`, the roles place a `docker-compose.yml` on the server and start it with Docker Compose. Running `site.yml` again changes nothing on a correct server. `vagrant halt` with several names stops them in `Vagrantfile` order, so the reverse order needs one call per server.
 
 **Memory:** the host has about 11 GB available for the servers. The four servers are allocated 11.5 GB, plus about 0.6 GB of VirtualBox overhead; the remaining ~1 GB is served from the host page file (SSD).
 
