@@ -42,3 +42,9 @@
   become: true
   roles:
     - traefik
+
+- name: jenkins - Jenkins
+  hosts: jenkins
+  become: true
+  roles:
+    - jenkins

@@ -1,0 +1,19 @@
+# Managed by Ansible (roles/jenkins). Changes here are overwritten.
+name: jenkins
+
+services:
+  jenkins:
+    image: {{ jenkins_image }}
+    restart: unless-stopped
+    network_mode: host          # port 8080 on the server itself, so ufw applies
+    environment:
+      JAVA_OPTS: "{{ jenkins_java_opts }}"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    deploy:
+      resources:
+        limits:
+          memory: {{ jenkins_memory_limit }}
+
+volumes:
+  jenkins_home:
