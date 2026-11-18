@@ -36,6 +36,7 @@ Mac (admin: Git, Ansible)
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
 | Mac | SSH key `~/.ssh/atmos_admin` for the host PC and the servers |
+| Mac | Ansible Vault password in the macOS Keychain (service `atmos-ansible-vault`), read by `vault-pass.sh` |
 
 ## Usage
 
@@ -45,7 +46,7 @@ git pull && vagrant up                                            # create and s
 vagrant halt k8s-w1 && vagrant halt k8s-cp && vagrant halt jenkins && vagrant halt nexus-traefik   # stop in reverse order
 
 # Mac
-ansible-playbook site.yml --ask-vault-pass --ask-become-pass      # configure all servers
+ansible-playbook site.yml --ask-become-pass                       # configure all servers and the Mac
 ```
 
 On `nexus-traefik` and `jenkins`, the roles place a `docker-compose.yml` on the server and start it with Docker Compose. Running `site.yml` again changes nothing on a correct server. `vagrant halt` with several names stops them in `Vagrantfile` order, so the reverse order needs one call per server.
@@ -58,7 +59,7 @@ Restore the `clean` snapshots (or `vagrant destroy` and `vagrant up`) and run `s
 
 ## Secrets
 
-Platform passwords are stored only encrypted with Ansible Vault. The vault password stays on the Mac; kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
+Platform passwords are stored only encrypted with Ansible Vault (`group_vars/all/vault.yml`). The vault password stays in the macOS Keychain of the Mac; `vault-pass.sh` reads it (set in `ansible.cfg`), so no vault password prompt is needed; kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
 
 ## Related
 
