@@ -1,0 +1,36 @@
+# Jenkins as a Docker Compose service in the host network on the jenkins server.
+
+- name: Create the Jenkins directory
+  ansible.builtin.file:
+    path: "{{ jenkins_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Place the Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ jenkins_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Start Jenkins (docker compose up)
+  community.docker.docker_compose_v2:
+    project_src: "{{ jenkins_dir }}"
+    state: present
+
+- name: Wait until Jenkins answers
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ jenkins_port }}/login
+    status_code: [200, 403]
+  register: jenkins_status
+  until: jenkins_status.status in [200, 403]
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Allow the Jenkins port only from Traefik (nexus-traefik)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ jenkins_port | string }}"
+    src: "{{ hostvars['nexus-traefik'].ansible_host }}"
+    comment: Jenkins through Traefik
