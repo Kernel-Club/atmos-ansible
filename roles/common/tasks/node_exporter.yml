@@ -1,0 +1,65 @@
+# node-exporter: metrics of the server on port 9100, scraped by Prometheus in the cluster.
+# Binary of the pinned version from GitHub, checked against the official checksums.
+
+- name: Create the node-exporter system user
+  ansible.builtin.user:
+    name: node_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Read the installed node-exporter version
+  ansible.builtin.command: "{{ common_node_exporter_binary }} --version"
+  register: common_node_exporter_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false   # read-only, so it also runs with --check
+
+- name: Install node-exporter {{ node_exporter_version }}
+  when: ("version " ~ node_exporter_version ~ " ") not in common_node_exporter_installed.stdout | default('')
+  block:
+    - name: Download the release archive
+      ansible.builtin.get_url:
+        url: "{{ common_node_exporter_url }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+        checksum: "sha256:{{ common_node_exporter_url }}/sha256sums.txt"
+        mode: "0644"
+
+    - name: Unpack the archive
+      ansible.builtin.unarchive:
+        src: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+        dest: /tmp
+        remote_src: true
+
+    - name: Install the binary
+      ansible.builtin.copy:
+        src: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter
+        dest: "{{ common_node_exporter_binary }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Restart node-exporter
+
+- name: Install the systemd service
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: "0644"
+  notify: Restart node-exporter
+
+- name: Start node-exporter and enable it at boot
+  ansible.builtin.systemd_service:
+    name: node_exporter
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Allow the node-exporter port from the cluster nodes (Prometheus)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ common_node_exporter_port | string }}"
+    src: "{{ hostvars[item].ansible_host }}"
+    comment: node-exporter for Prometheus
+  loop: "{{ groups['k3s'] }}"

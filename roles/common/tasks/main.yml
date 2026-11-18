@@ -11,3 +11,6 @@
 
 - name: Swap
   ansible.builtin.import_tasks: swap.yml
+
+- name: Server metrics
+  ansible.builtin.import_tasks: node_exporter.yml
