@@ -1,0 +1,13 @@
+# Defaults of the nexus role. Version in group_vars/all/versions.yml.
+
+nexus_dir: /opt/nexus
+nexus_image: sonatype/nexus3:{{ nexus_version }}
+
+# Published only on 127.0.0.1: ports published by Docker bypass ufw.
+# Outside the server Nexus is reached only through Traefik.
+nexus_http_port: 8081       # web interface and REST API
+nexus_registry_port: 8082   # Docker hosted repository (connector port)
+
+# Memory: container limit and JVM (heap + direct memory) inside it.
+nexus_memory_limit: 2g
+nexus_jvm_options: -Xms1g -Xmx1g -XX:MaxDirectMemorySize=512m

@@ -25,3 +25,9 @@
   become: true
   roles:
     - docker
+
+- name: nexus-traefik - Nexus
+  hosts: nexus-traefik
+  become: true
+  roles:
+    - nexus
