@@ -1,5 +1,5 @@
 # Configures the Atmos on-premise platform. Run from the Mac:
-#   ansible-playbook site.yml --ask-vault-pass --ask-become-pass
+#   ansible-playbook site.yml --ask-become-pass
 
 - name: Mac - names of the platform
   hosts: admin
@@ -13,6 +13,11 @@
           {% for entry in lan_names %}
           {{ hostvars[entry.host].ansible_host }} {{ entry.names | join(' ') }}
           {% endfor %}
+
+- name: Mac - CA and certificate for *.atmos.lan
+  hosts: admin
+  roles:
+    - pki
 
 - name: Servers - base configuration
   hosts: servers

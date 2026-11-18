@@ -1,0 +1,68 @@
+# Runs on the Mac. Every file is created only if it is missing or no longer valid,
+# so a second run issues nothing new.
+
+- name: Create the PKI directory (only the Mac user can read it)
+  ansible.builtin.file:
+    path: "{{ pki_dir }}"
+    state: directory
+    mode: "0700"
+
+# --- CA ---
+
+- name: Create the CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ pki_dir }}/ca.key"
+    type: RSA
+    size: 4096
+    mode: "0600"
+
+- name: Create the CA certificate request
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ pki_dir }}/ca.key"
+    common_name: "{{ pki_ca_name }}"
+    use_common_name_for_san: false
+    basic_constraints: ["CA:TRUE"]
+    basic_constraints_critical: true
+    key_usage: [keyCertSign, cRLSign]
+    key_usage_critical: true
+  register: pki_ca_csr
+  changed_when: false
+
+- name: Create the self-signed CA certificate
+  community.crypto.x509_certificate:
+    path: "{{ pki_dir }}/ca.crt"
+    privatekey_path: "{{ pki_dir }}/ca.key"
+    csr_content: "{{ pki_ca_csr.csr }}"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ pki_ca_days }}d"
+    mode: "0644"
+
+# --- Server certificate for *.atmos.lan ---
+
+- name: Create the server private key
+  community.crypto.openssl_privatekey:
+    path: "{{ pki_dir }}/atmos.lan.key"
+    type: RSA
+    size: 2048
+    mode: "0600"
+
+- name: Create the server certificate request
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ pki_dir }}/atmos.lan.key"
+    common_name: "{{ pki_server_names[0] }}"
+    subject_alt_name: "{{ pki_server_names | map('regex_replace', '^', 'DNS:') | list }}"
+    key_usage: [digitalSignature, keyEncipherment]
+    key_usage_critical: true
+    extended_key_usage: [serverAuth]
+  register: pki_server_csr
+  changed_when: false
+
+- name: Create the server certificate signed by the CA
+  community.crypto.x509_certificate:
+    path: "{{ pki_dir }}/atmos.lan.crt"
+    csr_content: "{{ pki_server_csr.csr }}"
+    provider: ownca
+    ownca_path: "{{ pki_dir }}/ca.crt"
+    ownca_privatekey_path: "{{ pki_dir }}/ca.key"
+    ownca_not_after: "+{{ pki_server_days }}d"
+    mode: "0644"
