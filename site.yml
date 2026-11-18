@@ -19,3 +19,9 @@
   become: true
   roles:
     - common
+
+- name: Servers outside the cluster - Docker
+  hosts: docker
+  become: true
+  roles:
+    - docker
