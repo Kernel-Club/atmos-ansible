@@ -34,3 +34,6 @@
     port: "{{ jenkins_port | string }}"
     src: "{{ hostvars['nexus-traefik'].ansible_host }}"
     comment: Jenkins through Traefik
+
+- name: Trust the private CA (registry and system)
+  ansible.builtin.import_tasks: registry.yml
