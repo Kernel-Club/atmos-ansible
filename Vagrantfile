@@ -37,6 +37,16 @@ Vagrant.configure("2") do |config|
         vb.linked_clone = true
       end
 
+      # The box ships the same SSH host keys for every VM: replace them once with unique keys.
+      node.vm.provision "shell", name: "host-keys", inline: <<~SHELL
+        if [ ! -f /etc/ssh/.atmos-host-keys ]; then
+          rm -f /etc/ssh/ssh_host_*
+          ssh-keygen -A
+          systemctl restart ssh
+          touch /etc/ssh/.atmos-host-keys
+        fi
+      SHELL
+
       node.vm.provision "shell", name: "admin-key", inline: <<~SHELL
         KEY='#{ADMIN_PUBLIC_KEY}'
         grep -qxF "$KEY" /home/vagrant/.ssh/authorized_keys || echo "$KEY" >> /home/vagrant/.ssh/authorized_keys
