@@ -1,8 +1,15 @@
 # Configures the Atmos on-premise platform. Run from the Mac:
 #   ansible-playbook site.yml --ask-become-pass
+#
+# The order matters:
+#   1. the Mac: names in /etc/hosts and the CA (Traefik and jenkins copy the CA files from the Mac);
+#   2. common on all servers (firewall, metrics, registry name), then Docker;
+#   3. Nexus before Traefik (Traefik routes to it), Traefik before Jenkins (Jenkins is reached through it).
+# Tags run one part only, for example: ansible-playbook site.yml --tags traefik
 
 - name: Mac - names of the platform
   hosts: admin
+  tags: mac
   become: true
   tasks:
     - name: Add the *.atmos.lan names to /etc/hosts
@@ -16,35 +23,41 @@
 
 - name: Mac - CA and certificate for *.atmos.lan
   hosts: admin
+  tags: pki
   roles:
     - pki
 
 - name: Servers - base configuration
   hosts: servers
+  tags: common
   become: true
   roles:
     - common
 
 - name: Servers outside the cluster - Docker
   hosts: docker
+  tags: docker
   become: true
   roles:
     - docker
 
 - name: nexus-traefik - Nexus
   hosts: nexus-traefik
+  tags: nexus
   become: true
   roles:
     - nexus
 
 - name: nexus-traefik - Traefik
   hosts: nexus-traefik
+  tags: traefik
   become: true
   roles:
     - traefik
 
 - name: jenkins - Jenkins
   hosts: jenkins
+  tags: jenkins
   become: true
   roles:
     - jenkins
