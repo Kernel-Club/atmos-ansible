@@ -1,0 +1,33 @@
+# Base rules only: deny incoming, SSH from the Mac and from Vagrant.
+# Every role opens the ports of its own service.
+# The allow rules are added before ufw is enabled, so the SSH session of Ansible is not cut.
+
+- name: Allow SSH from the Mac
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "22"
+    src: "{{ item }}"
+    comment: SSH from the Mac
+  loop: "{{ admin_ips }}"
+
+- name: Allow SSH on the NAT adapter (Vagrant)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "22"
+    direction: in
+    interface: "{{ common_nat_interface }}"
+    comment: SSH from Vagrant
+
+- name: Deny incoming and allow outgoing by default
+  community.general.ufw:
+    default: "{{ item.policy }}"
+    direction: "{{ item.direction }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled

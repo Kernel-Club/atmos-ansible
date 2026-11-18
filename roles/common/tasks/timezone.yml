@@ -1,0 +1,3 @@
+- name: Set the time zone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
