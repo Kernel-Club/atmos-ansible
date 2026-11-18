@@ -26,3 +26,6 @@
   retries: 36
   delay: 10
   changed_when: false
+
+- name: Admin password and anonymous access
+  ansible.builtin.import_tasks: admin.yml
