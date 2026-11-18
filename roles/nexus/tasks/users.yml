@@ -1,0 +1,102 @@
+# Roles with privileges on the Docker repository, and the push and pull users.
+
+- name: Check the roles
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/roles/{{ item.id }}"
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 404]
+  loop: "{{ nexus_roles }}"
+  loop_control:
+    label: "{{ item.id }}"
+  register: nexus_role_checks
+  no_log: true
+
+- name: Create the roles
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/roles"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      id: "{{ item.item.id }}"
+      name: "{{ item.item.id }}"
+      description: "{{ item.item.description }}"
+      privileges: "{{ item.item.actions | map('regex_replace', '^', 'nx-repository-view-docker-' ~ nexus_docker_repository ~ '-') | list }}"
+      roles: []
+    status_code: 200
+  loop: "{{ nexus_role_checks.results }}"
+  loop_control:
+    label: "{{ item.item.id }}"
+  when: item.status == 404
+  changed_when: true
+  no_log: true
+
+- name: Check the users and their passwords from Ansible Vault
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/repositories"
+    user: "{{ item.id }}"
+    password: "{{ item.password }}"
+    force_basic_auth: true
+    status_code: [200, 401]
+  loop: "{{ nexus_users }}"
+  loop_control:
+    label: "{{ item.id }}"
+  register: nexus_user_checks
+  no_log: true
+
+- name: Read the existing users
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/users"
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+  register: nexus_existing_users
+  no_log: true
+
+- name: Create the users
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/users"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      userId: "{{ item.id }}"
+      firstName: "{{ item.first_name }}"
+      lastName: "{{ item.last_name }}"
+      emailAddress: "{{ item.id }}@atmos.lan"
+      password: "{{ item.password }}"
+      status: active
+      roles: ["{{ item.role }}"]
+    status_code: 200
+  loop: "{{ nexus_users }}"
+  loop_control:
+    label: "{{ item.id }}"
+  when: item.id not in (nexus_existing_users.json | map(attribute='userId') | list)
+  changed_when: true
+  no_log: true
+
+- name: Reset the password of an existing user that does not match Ansible Vault
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/users/{{ item.item.id }}/change-password"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    headers:
+      Content-Type: text/plain
+    body: "{{ item.item.password }}"
+    status_code: 204
+  loop: "{{ nexus_user_checks.results }}"
+  loop_control:
+    label: "{{ item.item.id }}"
+  when:
+    - item.status == 401
+    - item.item.id in (nexus_existing_users.json | map(attribute='userId') | list)
+  changed_when: true
+  no_log: true

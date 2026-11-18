@@ -16,3 +16,43 @@ nexus_jvm_options: -Xms1g -Xmx1g -XX:MaxDirectMemorySize=512m
 nexus_container: nexus-nexus-1
 nexus_api: http://127.0.0.1:{{ nexus_http_port }}/service/rest/v1
 nexus_admin_password: "{{ vault_nexus_admin_password }}"
+
+# Docker hosted repository: images of Jenkins, pulled by the cluster and Flux.
+# Traefik publishes it as nexus.atmos.lan:5000 (-> 127.0.0.1:{{ nexus_registry_port }}).
+nexus_docker_repository: atmos-docker
+
+# Maintenance (Nexus Community has no "keep the last N versions" cleanup; old tags are removed by hand).
+# Quartz cron: seconds minutes hours day-of-month month day-of-week.
+nexus_tasks:
+  - name: atmos - delete unused Docker manifests and images
+    type: repository.docker.gc
+    cron: "0 0 3 ? * SUN"
+    properties:
+      repositoryName: "{{ nexus_docker_repository }}"
+      deployOffset: "24"
+  - name: atmos - compact the blob store
+    type: blobstore.compact
+    cron: "0 0 4 ? * SUN"
+    properties:
+      blobstoreName: default
+
+# Roles and users. Passwords come from Ansible Vault.
+nexus_roles:
+  - id: atmos-push
+    description: Push and pull images in {{ nexus_docker_repository }} (Jenkins)
+    actions: [browse, read, add, edit]
+  - id: atmos-pull
+    description: Pull images from {{ nexus_docker_repository }} (cluster, Flux)
+    actions: [browse, read]
+
+nexus_users:
+  - id: jenkins-push
+    first_name: Jenkins
+    last_name: Push
+    role: atmos-push
+    password: "{{ vault_nexus_push_password }}"
+  - id: cluster-pull
+    first_name: Cluster
+    last_name: Pull
+    role: atmos-pull
+    password: "{{ vault_nexus_pull_password }}"
