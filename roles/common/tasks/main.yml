@@ -1,0 +1,13 @@
+# Base configuration of every server.
+
+- name: Base packages
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Time zone
+  ansible.builtin.import_tasks: timezone.yml
+
+- name: Firewall
+  ansible.builtin.import_tasks: firewall.yml
+
+- name: Swap
+  ansible.builtin.import_tasks: swap.yml

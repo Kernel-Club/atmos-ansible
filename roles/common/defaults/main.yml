@@ -1,0 +1,19 @@
+# Defaults of the common role. Override them in group_vars/.
+
+common_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - htop
+  - jq
+  - ufw
+
+common_timezone: Asia/Seoul
+
+# NAT adapter of Vagrant: Vagrant itself connects over it (vagrant halt, vagrant ssh).
+common_nat_interface: eth0
+
+# Swap file of the box. 0 = no swap (cluster nodes: kubelet); set per group in group_vars/.
+common_swap_file: /swap.img
+common_swap_size_mb: 0
+common_swappiness: 10

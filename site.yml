@@ -13,3 +13,9 @@
           {% for entry in lan_names %}
           {{ hostvars[entry.host].ansible_host }} {{ entry.names | join(' ') }}
           {% endfor %}
+
+- name: Servers - base configuration
+  hosts: servers
+  become: true
+  roles:
+    - common
