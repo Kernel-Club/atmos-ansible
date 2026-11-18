@@ -1,0 +1,2 @@
+# Directory of the private CA and the *.atmos.lan certificate on the Mac (outside the repository).
+pki_dir: "{{ lookup('env', 'HOME') }}/.atmos/pki"

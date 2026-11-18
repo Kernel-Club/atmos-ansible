@@ -2,3 +2,6 @@
 admin_ips:
   - 192.168.0.224
   - 192.168.0.179
+
+# Home network: the browser of any home device may open the HTTPS addresses.
+home_network: 192.168.0.0/24

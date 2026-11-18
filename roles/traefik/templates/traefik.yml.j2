@@ -1,0 +1,25 @@
+# Static configuration of Traefik. Managed by Ansible (roles/traefik). A change restarts Traefik.
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+  registry:
+    address: ":5000"
+    transport:
+      respondingTimeouts:
+        readTimeout: 0s         # large image layers can take longer than the default 60 s
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true                 # routes are reloaded without a restart
+
+log:
+  level: INFO
