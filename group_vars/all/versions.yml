@@ -2,3 +2,9 @@
 # A rebuild gives the same result.
 
 node_exporter_version: "1.12.1"
+
+# Docker (official apt repository, full apt version strings; check with apt-cache policy)
+docker_version: "5:29.10.0-1~ubuntu.24.04~noble"
+docker_containerd_version: "2.4.2-4~ubuntu.24.04~noble"
+docker_buildx_version: "0.39.0-1~ubuntu.24.04~noble"
+docker_compose_version: "5.8.0-1~ubuntu.24.04~noble"
