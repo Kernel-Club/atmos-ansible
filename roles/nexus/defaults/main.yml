@@ -11,3 +11,8 @@ nexus_registry_port: 8082   # Docker hosted repository (connector port)
 # Memory: container limit and JVM (heap + direct memory) inside it.
 nexus_memory_limit: 2g
 nexus_jvm_options: -Xms1g -Xmx1g -XX:MaxDirectMemorySize=512m
+
+# REST API and admin account. The password comes from Ansible Vault.
+nexus_container: nexus-nexus-1
+nexus_api: http://127.0.0.1:{{ nexus_http_port }}/service/rest/v1
+nexus_admin_password: "{{ vault_nexus_admin_password }}"
