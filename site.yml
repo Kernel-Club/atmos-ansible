@@ -36,3 +36,9 @@
   become: true
   roles:
     - nexus
+
+- name: nexus-traefik - Traefik
+  hosts: nexus-traefik
+  become: true
+  roles:
+    - traefik

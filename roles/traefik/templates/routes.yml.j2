@@ -1,0 +1,41 @@
+# Dynamic configuration of Traefik (routes and certificate). Managed by Ansible (roles/traefik).
+# Traefik reloads this file by itself.
+
+http:
+  routers:
+    jenkins:
+      rule: Host(`jenkins.atmos.lan`)
+      entryPoints: [websecure]
+      service: jenkins
+      tls: {}
+    nexus:
+      rule: Host(`nexus.atmos.lan`)
+      entryPoints: [websecure]
+      service: nexus
+      tls: {}
+    registry:
+      rule: Host(`nexus.atmos.lan`)
+      entryPoints: [registry]
+      service: registry
+      tls: {}
+
+  services:
+    jenkins:
+      loadBalancer:
+        servers:
+          - url: {{ traefik_jenkins_url }}
+    nexus:
+      loadBalancer:
+        servers:
+          - url: {{ traefik_nexus_url }}
+    registry:
+      loadBalancer:
+        servers:
+          - url: {{ traefik_registry_url }}
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/atmos.lan.crt
+        keyFile: /etc/traefik/certs/atmos.lan.key

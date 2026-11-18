@@ -11,3 +11,6 @@ docker_compose_version: "5.8.0-1~ubuntu.24.04~noble"
 
 # Nexus Repository (Docker image tag)
 nexus_version: "3.98.1"
+
+# Traefik (Docker image tag)
+traefik_version: "v3.7.19"

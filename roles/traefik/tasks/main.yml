@@ -1,0 +1,62 @@
+# Traefik as a Docker Compose service in the host network on nexus-traefik.
+
+- name: Create the Traefik directories
+  ansible.builtin.file:
+    path: "{{ traefik_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: ["", dynamic, certs]
+
+- name: Copy the *.atmos.lan certificate and key from the Mac
+  ansible.builtin.copy:
+    src: "{{ pki_dir }}/{{ item.name }}"
+    dest: "{{ traefik_dir }}/certs/{{ item.name }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: atmos.lan.crt, mode: "0644" }
+    - { name: atmos.lan.key, mode: "0600" }
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Restart Traefik
+
+- name: Place the static configuration
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: "{{ traefik_dir }}/traefik.yml"
+    mode: "0644"
+  notify: Restart Traefik
+
+- name: Place the routes (reloaded by Traefik itself)
+  ansible.builtin.template:
+    src: routes.yml.j2
+    dest: "{{ traefik_dir }}/dynamic/routes.yml"
+    mode: "0644"
+
+- name: Place the Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ traefik_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Start Traefik (docker compose up)
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_dir }}"
+    state: present
+
+- name: Allow HTTP and HTTPS from the home network
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ item }}"
+    src: "{{ home_network }}"
+    comment: Traefik
+  loop: ["80", "443"]
+
+- name: Allow the registry port from Jenkins and the cluster nodes
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "5000"
+    src: "{{ hostvars[item].ansible_host }}"
+    comment: Docker registry (Traefik)
+  loop: "{{ traefik_registry_clients }}"
