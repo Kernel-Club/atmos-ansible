@@ -29,3 +29,9 @@
 
 - name: Admin password and anonymous access
   ansible.builtin.import_tasks: admin.yml
+
+- name: Docker repository and maintenance tasks
+  ansible.builtin.import_tasks: repository.yml
+
+- name: Roles and users
+  ansible.builtin.import_tasks: users.yml

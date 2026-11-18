@@ -1,0 +1,91 @@
+# Docker hosted repository, Docker token realm and maintenance tasks.
+
+- name: Read the active security realms
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/realms/active"
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+  register: nexus_realms
+  no_log: true
+
+- name: Activate the Docker Bearer Token realm (docker login)
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/security/realms/active"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body: "{{ nexus_realms.json + ['DockerToken'] }}"
+    status_code: 204
+  when: "'DockerToken' not in nexus_realms.json"
+  changed_when: true
+  no_log: true
+
+- name: Check the Docker hosted repository
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/repositories/docker/hosted/{{ nexus_docker_repository }}"
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 404]
+  register: nexus_repository
+  no_log: true
+
+- name: Create the Docker hosted repository
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/repositories/docker/hosted"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "{{ nexus_docker_repository }}"
+      online: true
+      storage:
+        blobStoreName: default
+        strictContentTypeValidation: true
+        writePolicy: allow_once   # tags <build>-<short-sha> are never overwritten
+      docker:
+        v1Enabled: false
+        forceBasicAuth: true
+        httpPort: "{{ nexus_registry_port }}"
+    status_code: 201
+  when: nexus_repository.status == 404
+  changed_when: true
+  no_log: true
+
+- name: Read the existing tasks
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/tasks"
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+  register: nexus_existing_tasks
+  no_log: true
+
+- name: Create the maintenance tasks
+  ansible.builtin.uri:
+    url: "{{ nexus_api }}/tasks"
+    method: POST
+    user: admin
+    password: "{{ nexus_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      type: "{{ item.type }}"
+      name: "{{ item.name }}"
+      enabled: true
+      notificationCondition: FAILURE
+      frequency:
+        schedule: cron
+        cronExpression: "{{ item.cron }}"
+      properties: "{{ item.properties }}"
+    status_code: [200, 201]
+  loop: "{{ nexus_tasks }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name not in (nexus_existing_tasks.json['items'] | map(attribute='name') | list)
+  changed_when: true
