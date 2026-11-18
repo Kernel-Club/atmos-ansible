@@ -8,3 +8,6 @@ docker_version: "5:29.10.0-1~ubuntu.24.04~noble"
 docker_containerd_version: "2.4.2-4~ubuntu.24.04~noble"
 docker_buildx_version: "0.39.0-1~ubuntu.24.04~noble"
 docker_compose_version: "5.8.0-1~ubuntu.24.04~noble"
+
+# Nexus Repository (Docker image tag)
+nexus_version: "3.98.1"
