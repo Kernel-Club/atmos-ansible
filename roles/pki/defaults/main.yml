@@ -1,0 +1,12 @@
+# Private CA of the platform and the certificate for *.atmos.lan.
+# Generated on the Mac, outside the repository. The CA key never leaves the Mac.
+
+pki_dir: "{{ lookup('env', 'HOME') }}/.atmos/pki"
+
+pki_ca_name: Atmos Root CA
+pki_ca_days: 3650              # 10 years: its trust is installed on every client
+
+pki_server_names:              # Subject Alternative Names (Docker, containerd and browsers read only the SAN)
+  - "*.atmos.lan"
+  - atmos.lan
+pki_server_days: 825           # browser limit for server certificates
