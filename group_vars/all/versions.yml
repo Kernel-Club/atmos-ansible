@@ -16,4 +16,4 @@ nexus_version: "3.98.1"
 traefik_version: "v3.7.19"
 
 # Jenkins platform: a version of atmos-jenkins (a branch while testing, a release tag after)
-jenkins_platform_version: feature/jenkins-platform
+jenkins_platform_version: v0.1.0
