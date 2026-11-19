@@ -35,6 +35,25 @@
     dest: "{{ jenkins_dir }}/docker-compose.yml"
     mode: "0644"
 
+- name: Create the secrets directory
+  ansible.builtin.file:
+    path: "{{ jenkins_dir }}/secrets"
+    state: directory
+    owner: "1000"          # the jenkins user in the container
+    mode: "0700"
+
+- name: Place the secrets from Ansible Vault
+  ansible.builtin.copy:
+    content: "{{ item.value }}"
+    dest: "{{ jenkins_dir }}/secrets/{{ item.key }}"
+    owner: "1000"
+    mode: "0400"
+  loop: "{{ jenkins_secrets | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true
+  notify: Restart Jenkins
+
 - name: Start Jenkins (docker compose up)
   community.docker.docker_compose_v2:
     project_src: "{{ jenkins_dir }}"

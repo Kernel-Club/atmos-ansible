@@ -1,3 +1,9 @@
 - name: Update the system CA certificates
   ansible.builtin.command: update-ca-certificates
   changed_when: true
+
+# JCasC reads the secrets only at start.
+- name: Restart Jenkins
+  community.docker.docker_compose_v2:
+    project_src: "{{ jenkins_dir }}"
+    state: restarted
