@@ -7,16 +7,16 @@
     mode: "0755"
   loop: ["", dynamic, certs]
 
-- name: Copy the *.atmos.lan certificate and key from the Mac
+- name: Copy the server certificate and key from the Mac
   ansible.builtin.copy:
-    src: "{{ pki_dir }}/{{ item.name }}"
-    dest: "{{ traefik_dir }}/certs/{{ item.name }}"
+    src: "{{ item.src }}"
+    dest: "{{ traefik_dir }}/certs/{{ item.src | basename }}"
     mode: "{{ item.mode }}"
   loop:
-    - { name: atmos.lan.crt, mode: "0644" }
-    - { name: atmos.lan.key, mode: "0600" }
+    - { src: "{{ pki_server_cert }}", mode: "0644" }
+    - { src: "{{ pki_server_key }}", mode: "0600" }
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.src | basename }}"
   notify: Restart Traefik
 
 - name: Place the static configuration
@@ -56,7 +56,7 @@
   community.general.ufw:
     rule: allow
     proto: tcp
-    port: "5000"
+    port: "{{ registry_port | string }}"
     src: "{{ hostvars[item].ansible_host }}"
     comment: Docker registry (Traefik)
   loop: "{{ traefik_registry_clients }}"

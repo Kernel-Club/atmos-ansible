@@ -1,0 +1,13 @@
+# Names, hosts and ports used by several roles. One place to change them.
+
+atmos_domain: atmos.lan
+
+traefik_host: nexus-traefik         # inventory host of Traefik (HTTPS entry point)
+jenkins_host: jenkins               # inventory host of Jenkins
+
+jenkins_name: "jenkins.{{ atmos_domain }}"
+jenkins_port: 8080
+
+nexus_name: "nexus.{{ atmos_domain }}"
+nexus_http_port: 8081               # web interface and REST API (only on 127.0.0.1)
+nexus_registry_port: 8082           # Docker hosted repository (only on 127.0.0.1)

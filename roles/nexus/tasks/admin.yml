@@ -9,6 +9,7 @@
     force_basic_auth: true
     status_code: [200, 401]
   register: nexus_admin_check
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Replace the initial admin password (first start only)
@@ -45,6 +46,7 @@
     password: "{{ nexus_admin_password }}"
     force_basic_auth: true
   register: nexus_anonymous
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Turn off anonymous access

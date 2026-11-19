@@ -1,5 +1,5 @@
-# Address of the internal Docker registry (Nexus behind Traefik on nexus-traefik).
-registry_name: nexus.atmos.lan
+# Address of the internal Docker registry (Nexus behind Traefik).
+registry_name: "{{ nexus_name }}"
 registry_port: 5000
 registry_address: "{{ registry_name }}:{{ registry_port }}"
-registry_host: nexus-traefik      # inventory host that serves the name
+registry_host: "{{ traefik_host }}"   # inventory host that serves the name

@@ -22,6 +22,7 @@
     url: http://127.0.0.1:{{ nexus_http_port }}/service/rest/v1/status
     status_code: 200
   register: nexus_status
+  check_mode: false   # read-only, so it also runs with --check
   until: nexus_status.status == 200
   retries: 36
   delay: 10

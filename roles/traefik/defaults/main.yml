@@ -1,13 +1,13 @@
-# Defaults of the traefik role (reverse proxy on nexus-traefik). Version in group_vars/all/versions.yml.
+# Defaults of the traefik role (reverse proxy on traefik_host). Version in group_vars/all/versions.yml.
 
 traefik_dir: /opt/traefik
 traefik_image: traefik:{{ traefik_version }}
 traefik_memory_limit: 128m
 
 # Upstreams
-traefik_jenkins_url: http://{{ hostvars['jenkins'].ansible_host }}:8080
-traefik_nexus_url: http://127.0.0.1:{{ nexus_http_port | default(8081) }}
-traefik_registry_url: http://127.0.0.1:{{ nexus_registry_port | default(8082) }}
+traefik_jenkins_url: http://{{ hostvars[jenkins_host].ansible_host }}:{{ jenkins_port }}
+traefik_nexus_url: http://127.0.0.1:{{ nexus_http_port }}
+traefik_registry_url: http://127.0.0.1:{{ nexus_registry_port }}
 
-# Who may reach the registry port 5000: Jenkins (push) and the cluster nodes (pull)
-traefik_registry_clients: "{{ ['jenkins'] + groups['k3s'] }}"
+# Who may reach the registry port: Jenkins (push) and the cluster nodes (pull)
+traefik_registry_clients: "{{ [jenkins_host] + groups['k3s'] }}"
