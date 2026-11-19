@@ -11,6 +11,10 @@ services:
       JENKINS_OPTS: "--httpPort={{ jenkins_port }}"
     volumes:
       - jenkins_home:/var/jenkins_home
+    secrets:                    # files in /run/secrets/, read by JCasC
+{% for name in jenkins_secrets %}
+      - {{ name }}
+{% endfor %}
     deploy:
       resources:
         limits:
@@ -18,3 +22,9 @@ services:
 
 volumes:
   jenkins_home:
+
+secrets:
+{% for name in jenkins_secrets %}
+  {{ name }}:
+    file: ./secrets/{{ name }}
+{% endfor %}

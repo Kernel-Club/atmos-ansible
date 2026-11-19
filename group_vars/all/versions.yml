@@ -15,5 +15,5 @@ nexus_version: "3.98.1"
 # Traefik (Docker image tag)
 traefik_version: "v3.7.19"
 
-# Jenkins LTS (Docker image tag)
-jenkins_version: "2.580.2-lts-jdk21"
+# Jenkins platform: a version of atmos-jenkins (a branch while testing, a release tag after)
+jenkins_platform_version: v0.1.0

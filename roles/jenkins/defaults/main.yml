@@ -1,8 +1,13 @@
-# Defaults of the jenkins role (install only; the Jenkins platform configuration is in US-03).
-# Version in group_vars/all/versions.yml.
+# Defaults of the jenkins role: deploys the Jenkins platform from the atmos-jenkins repository.
+# Version of the platform in group_vars/all/versions.yml.
 
 jenkins_dir: /opt/jenkins
-jenkins_image: jenkins/jenkins:{{ jenkins_version }}
+jenkins_src_dir: "{{ jenkins_dir }}/platform"
+jenkins_repo: https://github.com/Kernel-Club/atmos-jenkins.git
+
+# Secrets for JCasC: name in Jenkins (${NAME}) -> value from Ansible Vault.
+jenkins_secrets:
+  JENKINS_ADMIN_PASSWORD: "{{ vault_jenkins_admin_password }}"
 
 # Memory: container limit and JVM heap inside it. Image builds run in separate containers.
 jenkins_memory_limit: 1g

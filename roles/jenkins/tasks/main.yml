@@ -1,4 +1,4 @@
-# Jenkins as a Docker Compose service in the host network on the jenkins server.
+# Jenkins platform from atmos-jenkins, built on the server and run with Docker Compose in the host network.
 
 - name: Create the Jenkins directory
   ansible.builtin.file:
@@ -6,11 +6,53 @@
     state: directory
     mode: "0755"
 
+- name: Install git
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+- name: Get the platform version from atmos-jenkins
+  ansible.builtin.git:
+    repo: "{{ jenkins_repo }}"
+    dest: "{{ jenkins_src_dir }}"
+    version: "{{ jenkins_platform_version }}"
+  register: jenkins_src
+
+- name: Name the image after the platform commit
+  ansible.builtin.set_fact:
+    jenkins_image: "atmos-jenkins:{{ jenkins_src.after[:12] }}"
+
+- name: Build the Jenkins image (only when this commit has no image yet)
+  community.docker.docker_image:
+    name: "{{ jenkins_image }}"
+    source: build
+    build:
+      path: "{{ jenkins_src_dir }}"
+
 - name: Place the Compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ jenkins_dir }}/docker-compose.yml"
     mode: "0644"
+
+- name: Create the secrets directory
+  ansible.builtin.file:
+    path: "{{ jenkins_dir }}/secrets"
+    state: directory
+    owner: "1000"          # the jenkins user in the container
+    mode: "0700"
+
+- name: Place the secrets from Ansible Vault
+  ansible.builtin.copy:
+    content: "{{ item.value }}"
+    dest: "{{ jenkins_dir }}/secrets/{{ item.key }}"
+    owner: "1000"
+    mode: "0400"
+  loop: "{{ jenkins_secrets | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true
+  notify: Restart Jenkins
 
 - name: Start Jenkins (docker compose up)
   community.docker.docker_compose_v2:
