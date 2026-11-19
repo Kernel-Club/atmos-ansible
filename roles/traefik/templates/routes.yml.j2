@@ -4,17 +4,17 @@
 http:
   routers:
     jenkins:
-      rule: Host(`jenkins.atmos.lan`)
+      rule: Host(`{{ jenkins_name }}`)
       entryPoints: [websecure]
       service: jenkins
       tls: {}
     nexus:
-      rule: Host(`nexus.atmos.lan`)
+      rule: Host(`{{ nexus_name }}`)
       entryPoints: [websecure]
       service: nexus
       tls: {}
     registry:
-      rule: Host(`nexus.atmos.lan`)
+      rule: Host(`{{ registry_name }}`)
       entryPoints: [registry]
       service: registry
       tls: {}
@@ -37,5 +37,5 @@ tls:
   stores:
     default:
       defaultCertificate:
-        certFile: /etc/traefik/certs/atmos.lan.crt
-        keyFile: /etc/traefik/certs/atmos.lan.key
+        certFile: /etc/traefik/certs/{{ pki_server_cert | basename }}
+        keyFile: /etc/traefik/certs/{{ pki_server_key | basename }}

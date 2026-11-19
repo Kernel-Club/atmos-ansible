@@ -22,17 +22,18 @@
     url: http://127.0.0.1:{{ jenkins_port }}/login
     status_code: [200, 403]
   register: jenkins_status
+  check_mode: false   # read-only, so it also runs with --check
   until: jenkins_status.status in [200, 403]
   retries: 30
   delay: 10
   changed_when: false
 
-- name: Allow the Jenkins port only from Traefik (nexus-traefik)
+- name: Allow the Jenkins port only from Traefik
   community.general.ufw:
     rule: allow
     proto: tcp
     port: "{{ jenkins_port | string }}"
-    src: "{{ hostvars['nexus-traefik'].ansible_host }}"
+    src: "{{ hostvars[traefik_host].ansible_host }}"
     comment: Jenkins through Traefik
 
 - name: Trust the private CA (registry and system)

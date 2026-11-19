@@ -7,6 +7,7 @@
     password: "{{ nexus_admin_password }}"
     force_basic_auth: true
   register: nexus_realms
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Activate the Docker Bearer Token realm (docker login)
@@ -31,6 +32,7 @@
     force_basic_auth: true
     status_code: [200, 404]
   register: nexus_repository
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Create the Docker hosted repository
@@ -64,6 +66,7 @@
     password: "{{ nexus_admin_password }}"
     force_basic_auth: true
   register: nexus_existing_tasks
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Create the maintenance tasks

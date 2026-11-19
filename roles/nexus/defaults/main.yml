@@ -3,10 +3,9 @@
 nexus_dir: /opt/nexus
 nexus_image: sonatype/nexus3:{{ nexus_version }}
 
-# Published only on 127.0.0.1: ports published by Docker bypass ufw.
-# Outside the server Nexus is reached only through Traefik.
-nexus_http_port: 8081       # web interface and REST API
-nexus_registry_port: 8082   # Docker hosted repository (connector port)
+# Ports nexus_http_port and nexus_registry_port (group_vars/all/platform.yml) are published
+# only on 127.0.0.1: ports published by Docker bypass ufw. Outside the server Nexus is reached
+# only through Traefik.
 
 # Memory: container limit and JVM (heap + direct memory) inside it.
 nexus_memory_limit: 2g
@@ -18,7 +17,7 @@ nexus_api: http://127.0.0.1:{{ nexus_http_port }}/service/rest/v1
 nexus_admin_password: "{{ vault_nexus_admin_password }}"
 
 # Docker hosted repository: images of Jenkins, pulled by the cluster and Flux.
-# Traefik publishes it as nexus.atmos.lan:5000 (-> 127.0.0.1:{{ nexus_registry_port }}).
+# Traefik publishes it as registry_address (-> 127.0.0.1:nexus_registry_port).
 nexus_docker_repository: atmos-docker
 
 # Maintenance (Nexus Community has no "keep the last N versions" cleanup; old tags are removed by hand).

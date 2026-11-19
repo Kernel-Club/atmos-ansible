@@ -5,9 +5,10 @@ services:
   jenkins:
     image: {{ jenkins_image }}
     restart: unless-stopped
-    network_mode: host          # port 8080 on the server itself, so ufw applies
+    network_mode: host          # the port is on the server itself, so ufw applies
     environment:
       JAVA_OPTS: "{{ jenkins_java_opts }}"
+      JENKINS_OPTS: "--httpPort={{ jenkins_port }}"
     volumes:
       - jenkins_home:/var/jenkins_home
     deploy:

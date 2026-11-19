@@ -8,13 +8,13 @@
 
 - name: Trust the CA for the registry in Docker
   ansible.builtin.copy:
-    src: "{{ pki_dir }}/ca.crt"
+    src: "{{ pki_ca_cert }}"
     dest: /etc/docker/certs.d/{{ registry_address }}/ca.crt
     mode: "0644"
 
 - name: Add the CA to the system trust store
   ansible.builtin.copy:
-    src: "{{ pki_dir }}/ca.crt"
+    src: "{{ pki_ca_cert }}"
     dest: /usr/local/share/ca-certificates/atmos-root-ca.crt
     mode: "0644"
   notify: Update the system CA certificates

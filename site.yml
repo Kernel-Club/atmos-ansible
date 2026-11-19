@@ -12,7 +12,7 @@
   tags: mac
   become: true
   tasks:
-    - name: Add the *.atmos.lan names to /etc/hosts
+    - name: Add the platform names to /etc/hosts
       ansible.builtin.blockinfile:
         path: /etc/hosts
         marker: "# {mark} ATMOS (managed by Ansible)"
@@ -21,7 +21,7 @@
           {{ hostvars[entry.host].ansible_host }} {{ entry.names | join(' ') }}
           {% endfor %}
 
-- name: Mac - CA and certificate for *.atmos.lan
+- name: Mac - CA and server certificate
   hosts: admin
   tags: pki
   roles:

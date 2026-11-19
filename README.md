@@ -3,7 +3,7 @@
 Vagrant and Ansible for the on-premise platform of **Atmos**: creates the servers in VirtualBox and configures everything inside them.
 
 ```text
-Mac (admin: Git, Ansible)
+Mac (admin: Git, Ansible, private CA)
  ├─ SSH ─► host PC (Windows: VirtualBox, Vagrant) ─► vagrant up: creates the VMs
  └─ SSH ─► nexus-traefik  Docker Compose: Nexus, Traefik
            jenkins        Docker Compose: Jenkins
@@ -15,15 +15,17 @@ Mac (admin: Git, Ansible)
 
 | Path | What it does |
 |---|---|
-| `Vagrantfile` | The four VMs: pinned box, CPU, RAM, fixed addresses, SSH key of the Mac, start order |
-| `inventory/` | Servers with fixed addresses, plus `localhost` (the Mac) for `/etc/hosts` |
-| `group_vars/` | Pinned versions, secrets in Ansible Vault |
-| `roles/common/` | All servers: base packages, `ufw`, node-exporter, `*.atmos.lan` hosts entries, swap file outside the cluster |
-| `roles/docker/` | `nexus-traefik`, `jenkins`: Docker Engine and the Compose plugin |
-| `roles/nexus/`, `roles/traefik/` | `nexus-traefik`: image registry, HTTPS entry point (Compose services) |
-| `roles/jenkins/` | `jenkins`: CI server (Compose service) |
-| `roles/k3s/` | `k8s-cp`, `k8s-w1`: k3s cluster, Traefik `HelmChartConfig`, access to the Nexus registry |
-| `site.yml` | Configures all servers |
+| `Vagrantfile` | The four VMs: pinned box, CPU, RAM, fixed addresses, start order; unique SSH host keys and the SSH key of the Mac on creation |
+| `inventory/hosts.yml` | Servers with fixed addresses, groups `servers`, `docker`, `k3s`, and `localhost` (the Mac) |
+| `group_vars/all/` | Shared names, hosts and ports (`platform.yml`), registry address, PKI paths, platform names, Mac addresses, pinned versions, secrets (Ansible Vault) |
+| `roles/pki/` | The Mac: private CA and the wildcard certificate of the platform domain |
+| `roles/common/` | All servers: base packages, time zone, `ufw`, registry name in `/etc/hosts`, swap file (outside the cluster), node-exporter |
+| `roles/docker/` | `nexus-traefik`, `jenkins`: Docker Engine and the Compose plugin, pinned and held |
+| `roles/nexus/` | `nexus-traefik`: Nexus (Compose service), admin password, Docker repository, maintenance tasks, push and pull users |
+| `roles/traefik/` | `nexus-traefik`: Traefik (Compose service), HTTPS routes for Jenkins, Nexus and the registry |
+| `roles/jenkins/` | `jenkins`: Jenkins LTS (Compose service), trust of the private CA |
+| `site.yml` | Applies everything in order; one tag per play |
+| `vault-pass.sh` | Reads the Ansible Vault password from the macOS Keychain |
 
 ## Prerequisites (manual, once)
 
@@ -34,9 +36,11 @@ Mac (admin: Git, Ansible)
 | Host PC | OpenSSH Server: key login only (`PasswordAuthentication no`), firewall rule for port 22 only from the Mac, network profile Private |
 | Host PC | VirtualBox machine folder on drive D: (`VBoxManage setproperty machinefolder "D:\VirtualBox VMs"`); VM disks are dynamic, 64 GB each |
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
+| Router | DHCP pool outside the server addresses .51–.54; DHCP reservations for the Mac and the host PC |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
 | Mac | SSH key `~/.ssh/atmos_admin` for the host PC and the servers |
-| Mac | Ansible Vault password in the macOS Keychain (service `atmos-ansible-vault`), read by `vault-pass.sh` |
+| Mac | Ansible Vault password in the macOS Keychain (service `atmos-ansible-vault`); a backup copy outside the Mac |
+| Mac | Backup of `~/.atmos/pki/ca.key` and `ca.crt` outside the Mac (created by `site.yml` on the first run) |
 
 ## Usage
 
@@ -46,20 +50,61 @@ git pull && vagrant up                                            # create and s
 vagrant halt k8s-w1 && vagrant halt k8s-cp && vagrant halt jenkins && vagrant halt nexus-traefik   # stop in reverse order
 
 # Mac
-ansible-playbook site.yml --ask-become-pass                       # configure all servers and the Mac
+ansible-playbook site.yml --ask-become-pass                       # configure the Mac and all servers
+ansible-playbook site.yml --check --diff --ask-become-pass        # show the changes, change nothing
+ansible-playbook site.yml --tags traefik                          # one part only (tags: mac, pki, common, docker, nexus, traefik, jenkins)
+ansible-playbook site.yml --limit k8s-w1                          # one server only
+ansible all -m ping                                               # access check
 ```
 
-On `nexus-traefik` and `jenkins`, the roles place a `docker-compose.yml` on the server and start it with Docker Compose. Running `site.yml` again changes nothing on a correct server. `vagrant halt` with several names stops them in `Vagrantfile` order, so the reverse order needs one call per server.
+- Running `site.yml` again changes nothing on a correct server.
+- `--ask-become-pass` is the sudo password of the Mac (the plays on the Mac change `/etc/hosts`); runs limited to the servers do not need it.
+- `vagrant halt` with several names stops them in `Vagrantfile` order, so the reverse order needs one call per server.
+- After `vagrant up`, wait about a minute before Ansible: the bridged network of a VM becomes reachable after it reports "ready".
 
 **Memory:** the host has about 11 GB available for the servers. The four servers are allocated 11.5 GB, plus about 0.6 GB of VirtualBox overhead; the remaining ~1 GB is served from the host page file (SSD).
 
-## Rebuild
+## Addresses
 
-Restore the `clean` snapshots (or `vagrant destroy` and `vagrant up`) and run `site.yml`. Then follow the manual steps in [architecture.md](https://github.com/Kernel-Club/atmos-dev/blob/develop/docs/on-premise/architecture.md) (section 2): Jenkins credentials and job, first build, Flux bootstrap, Kubernetes Secrets. After a rebuild of `jenkins` alone, set Next Build Number of the job above the highest tag in Nexus.
+| Name | Served by | Reachable from |
+|---|---|---|
+| `https://jenkins.atmos.lan` | Traefik on `nexus-traefik` → Jenkins `:8080` on `jenkins` | home network |
+| `https://nexus.atmos.lan` | Traefik → Nexus (only on `127.0.0.1:8081`) | home network |
+| `nexus.atmos.lan:5000` | Traefik → Nexus Docker registry (only on `127.0.0.1:8082`) | `jenkins`, cluster nodes |
+
+Names, hosts and ports are defined once in `group_vars/all/platform.yml` and `registry.yml`. The Mac gets the names in `/etc/hosts`; the servers get only the registry name.
+
+Nexus users: `jenkins-push` (push and pull) and `cluster-pull` (pull only) on the repository `atmos-docker`; passwords in Ansible Vault. Nexus Community has no "keep the last N versions" cleanup: old tags are removed by hand; weekly tasks delete unused manifests and compact the blob store.
+
+## Certificates
+
+`roles/pki` creates on the Mac, in `~/.atmos/pki` (outside the repository):
+
+| File | Valid until | Used by |
+|---|---|---|
+| `ca.crt` / `ca.key` — Atmos Root CA | 2036-11-15 | trusted by the Mac, Docker on `jenkins` (and later the cluster and Flux); the key never leaves the Mac |
+| `atmos.lan.crt` / `.key` — `*.atmos.lan`, `atmos.lan` (SAN) | **2029-02-20** | Traefik |
+
+Check the dates: `openssl x509 -in ~/.atmos/pki/atmos.lan.crt -noout -enddate`.
+Renew the server certificate before it expires: delete `atmos.lan.crt` and run `ansible-playbook site.yml --tags pki,traefik --ask-become-pass`; the clients keep trusting it because the CA stays the same.
+
+## Snapshots and rebuild
+
+- **Snapshots:** `vagrant snapshot save clean` (all servers stopped, disk only) after the base configuration. Restore one server with `vagrant snapshot restore jenkins clean` or all with `vagrant snapshot restore clean`, then run `site.yml`.
+- **Recreate a server:** `vagrant destroy -f <server>`, `vagrant up <server>`, then `site.yml`. A new VM has a new SSH host key: on the Mac run `ssh-keygen -R <address>` and connect once to accept the new key.
+- **Whole platform:** follow the manual steps in [architecture.md](https://github.com/Kernel-Club/atmos-dev/blob/develop/docs/on-premise/architecture.md) (section 2).
+
+## Known issues
+
+| Issue | What to do |
+|---|---|
+| A VM hangs at boot: `vagrant up` times out, the console shows `rcu_preempt detected expedited stalls on CPUs` (VirtualBox vCPU stall) | `vagrant halt -f <server>`, then `vagrant up` |
+| Nexus Community sends daily telemetry; after 30 days without it the instance becomes read-only | Keep outgoing internet access on `nexus-traefik` |
+| Ansible reports `Host key verification failed` after a server was recreated | `ssh-keygen -R <address>`, connect once |
 
 ## Secrets
 
-Platform passwords are stored only encrypted with Ansible Vault (`group_vars/all/vault.yml`). The vault password stays in the macOS Keychain of the Mac; `vault-pass.sh` reads it (set in `ansible.cfg`), so no vault password prompt is needed; kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
+Platform passwords are stored only encrypted with Ansible Vault (`group_vars/all/vault.yml`). The vault password stays in the macOS Keychain of the Mac; `vault-pass.sh` reads it (set in `ansible.cfg`), so no vault password prompt is needed. The CA key, kubeconfig, keys and `.env` files are never committed (see `.gitignore`).
 
 ## Related
 

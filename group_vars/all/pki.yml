@@ -1,2 +1,6 @@
-# Directory of the private CA and the *.atmos.lan certificate on the Mac (outside the repository).
+# Private CA and the server certificate on the Mac (outside the repository).
 pki_dir: "{{ lookup('env', 'HOME') }}/.atmos/pki"
+pki_ca_cert: "{{ pki_dir }}/ca.crt"
+pki_ca_key: "{{ pki_dir }}/ca.key"
+pki_server_cert: "{{ pki_dir }}/{{ atmos_domain }}.crt"
+pki_server_key: "{{ pki_dir }}/{{ atmos_domain }}.key"

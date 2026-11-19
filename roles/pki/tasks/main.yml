@@ -11,14 +11,14 @@
 
 - name: Create the CA private key
   community.crypto.openssl_privatekey:
-    path: "{{ pki_dir }}/ca.key"
+    path: "{{ pki_ca_key }}"
     type: RSA
     size: 4096
     mode: "0600"
 
 - name: Create the CA certificate request
   community.crypto.openssl_csr_pipe:
-    privatekey_path: "{{ pki_dir }}/ca.key"
+    privatekey_path: "{{ pki_ca_key }}"
     common_name: "{{ pki_ca_name }}"
     use_common_name_for_san: false
     basic_constraints: ["CA:TRUE"]
@@ -30,25 +30,25 @@
 
 - name: Create the self-signed CA certificate
   community.crypto.x509_certificate:
-    path: "{{ pki_dir }}/ca.crt"
-    privatekey_path: "{{ pki_dir }}/ca.key"
+    path: "{{ pki_ca_cert }}"
+    privatekey_path: "{{ pki_ca_key }}"
     csr_content: "{{ pki_ca_csr.csr }}"
     provider: selfsigned
     selfsigned_not_after: "+{{ pki_ca_days }}d"
     mode: "0644"
 
-# --- Server certificate for *.atmos.lan ---
+# --- Server certificate for *.atmos_domain ---
 
 - name: Create the server private key
   community.crypto.openssl_privatekey:
-    path: "{{ pki_dir }}/atmos.lan.key"
+    path: "{{ pki_server_key }}"
     type: RSA
     size: 2048
     mode: "0600"
 
 - name: Create the server certificate request
   community.crypto.openssl_csr_pipe:
-    privatekey_path: "{{ pki_dir }}/atmos.lan.key"
+    privatekey_path: "{{ pki_server_key }}"
     common_name: "{{ pki_server_names[0] }}"
     subject_alt_name: "{{ pki_server_names | map('regex_replace', '^', 'DNS:') | list }}"
     key_usage: [digitalSignature, keyEncipherment]
@@ -59,10 +59,10 @@
 
 - name: Create the server certificate signed by the CA
   community.crypto.x509_certificate:
-    path: "{{ pki_dir }}/atmos.lan.crt"
+    path: "{{ pki_server_cert }}"
     csr_content: "{{ pki_server_csr.csr }}"
     provider: ownca
-    ownca_path: "{{ pki_dir }}/ca.crt"
-    ownca_privatekey_path: "{{ pki_dir }}/ca.key"
+    ownca_path: "{{ pki_ca_cert }}"
+    ownca_privatekey_path: "{{ pki_ca_key }}"
     ownca_not_after: "+{{ pki_server_days }}d"
     mode: "0644"

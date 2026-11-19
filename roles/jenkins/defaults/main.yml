@@ -3,7 +3,6 @@
 
 jenkins_dir: /opt/jenkins
 jenkins_image: jenkins/jenkins:{{ jenkins_version }}
-jenkins_port: 8080
 
 # Memory: container limit and JVM heap inside it. Image builds run in separate containers.
 jenkins_memory_limit: 1g

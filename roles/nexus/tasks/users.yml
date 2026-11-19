@@ -11,6 +11,7 @@
   loop_control:
     label: "{{ item.id }}"
   register: nexus_role_checks
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Create the roles
@@ -46,6 +47,7 @@
   loop_control:
     label: "{{ item.id }}"
   register: nexus_user_checks
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Read the existing users
@@ -55,6 +57,7 @@
     password: "{{ nexus_admin_password }}"
     force_basic_auth: true
   register: nexus_existing_users
+  check_mode: false   # read-only, so it also runs with --check
   no_log: true
 
 - name: Create the users
@@ -69,7 +72,7 @@
       userId: "{{ item.id }}"
       firstName: "{{ item.first_name }}"
       lastName: "{{ item.last_name }}"
-      emailAddress: "{{ item.id }}@atmos.lan"
+      emailAddress: "{{ item.id }}@{{ atmos_domain }}"
       password: "{{ item.password }}"
       status: active
       roles: ["{{ item.role }}"]

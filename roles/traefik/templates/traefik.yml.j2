@@ -11,7 +11,7 @@ entryPoints:
   websecure:
     address: ":443"
   registry:
-    address: ":5000"
+    address: ":{{ registry_port }}"
     transport:
       respondingTimeouts:
         readTimeout: 0s         # large image layers can take longer than the default 60 s
