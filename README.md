@@ -2,14 +2,51 @@
 
 Vagrant and Ansible for the on-premise platform of **Atmos**: creates the servers in VirtualBox and configures everything inside them.
 
-```text
-Mac (admin: Git, Ansible, private CA)
- ├─ SSH ─► host PC (Windows: VirtualBox, Vagrant) ─► vagrant up: creates the VMs
- └─ SSH ─► nexus-traefik  Docker Compose: Nexus, Traefik
-           jenkins        Docker Compose: Jenkins
-           k8s-cp         k3s server
-           k8s-w1         k3s agent
+```mermaid
+flowchart TB
+    subgraph MAC["Mac — admin"]
+        direction LR
+        SSH["SSH"]
+        ANS["Ansible + Vault<br/>(password in Keychain)"]
+        CA["Private CA"]
+        BR["Browser"]
+    end
+
+    subgraph PC["Host PC — Windows"]
+        VAG["Vagrant + Vagrantfile"]
+        VB["VirtualBox"]
+        VAG --> VB
+    end
+
+    subgraph LAN["Home network 192.168.0.0/24 — VMs, Ubuntu 24.04, ufw on each"]
+        direction LR
+        subgraph NT["nexus-traefik .53"]
+            TRA["Traefik<br/>:443 web, :5000 registry"]
+            NEX["Nexus<br/>127.0.0.1 only"]
+            TRA --> NEX
+        end
+        subgraph JE["jenkins .54"]
+            JEN["Jenkins<br/>:8080 only from Traefik"]
+            BLD["Build containers<br/>(temporary)"]
+            JEN -- "Docker socket" --> BLD
+        end
+        subgraph K8S["k3s cluster"]
+            CP["k8s-cp .51<br/>control plane"]
+            W1["k8s-w1 .52<br/>worker"]
+        end
+    end
+
+    SSH -- "vagrant up / halt" --> VAG
+    VB -- "creates and runs" --> LAN
+    ANS -- "SSH: configures VMs,<br/>runs the containers" --> LAN
+    CA -. "certificate" .-> TRA
+    BR -- "HTTPS *.atmos.lan" --> TRA
+    TRA --> JEN
+    JEN -- "push images" --> TRA
+    K8S -- "pull images" --> TRA
 ```
+
+Layers: Vagrant on the host PC creates the VMs, Ansible on the Mac configures everything inside them, and the tools run as Docker containers (Nexus, Traefik, Jenkins) or as k3s. All web access and the registry go through Traefik.
 
 ## Contents
 
@@ -20,10 +57,10 @@ Mac (admin: Git, Ansible, private CA)
 | `group_vars/all/` | Shared names, hosts and ports (`platform.yml`), registry address, PKI paths, platform names, Mac addresses, pinned versions, secrets (Ansible Vault) |
 | `roles/pki/` | The Mac: private CA and the wildcard certificate of the platform domain |
 | `roles/common/` | All servers: base packages, time zone, `ufw`, registry name in `/etc/hosts`, swap file (outside the cluster), node-exporter |
-| `roles/docker/` | `nexus-traefik`, `jenkins`: Docker Engine and the Compose plugin, pinned and held |
-| `roles/nexus/` | `nexus-traefik`: Nexus (Compose service), admin password, Docker repository, maintenance tasks, push and pull users |
-| `roles/traefik/` | `nexus-traefik`: Traefik (Compose service), HTTPS routes for Jenkins, Nexus and the registry |
-| `roles/jenkins/` | `jenkins`: Jenkins LTS (Compose service), trust of the private CA |
+| `roles/docker/` | `nexus-traefik`, `jenkins`: Docker Engine, pinned and held |
+| `roles/nexus/` | `nexus-traefik`: Nexus container, admin password, Docker repository, maintenance tasks, push and pull users |
+| `roles/traefik/` | `nexus-traefik`: Traefik container, HTTPS routes for Jenkins, Nexus and the registry |
+| `roles/jenkins/` | `jenkins`: Jenkins container built from a pinned version of `atmos-jenkins`, secrets from Ansible Vault, trust of the private CA |
 | `site.yml` | Applies everything in order; one tag per play |
 | `vault-pass.sh` | Reads the Ansible Vault password from the macOS Keychain |
 

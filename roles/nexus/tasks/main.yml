@@ -1,21 +1,18 @@
-# Nexus Repository as a Docker Compose service on nexus-traefik.
+# Nexus Repository as a Docker container on nexus-traefik.
 
-- name: Create the Nexus directory
-  ansible.builtin.file:
-    path: "{{ nexus_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Place the Compose file
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ nexus_dir }}/docker-compose.yml"
-    mode: "0644"
-
-- name: Start Nexus (docker compose up)
-  community.docker.docker_compose_v2:
-    project_src: "{{ nexus_dir }}"
-    state: present
+- name: Start the Nexus container
+  community.docker.docker_container:
+    name: "{{ nexus_container }}"
+    image: "{{ nexus_image }}"
+    restart_policy: unless-stopped
+    published_ports:      # only on 127.0.0.1: ports published by Docker bypass ufw
+      - "127.0.0.1:{{ nexus_http_port }}:8081"    # 8081: port of Nexus inside the container
+      - "127.0.0.1:{{ nexus_registry_port }}:{{ nexus_registry_port }}"
+    env:
+      INSTALL4J_ADD_VM_PARAMS: "{{ nexus_jvm_options }}"
+    volumes:
+      - nexus-data:/nexus-data
+    memory: "{{ nexus_memory_limit }}"
 
 - name: Wait until Nexus is ready (the first start takes a few minutes)
   ansible.builtin.uri:

@@ -1,4 +1,4 @@
-# Docker Engine and the Compose plugin from the official Docker repository, pinned versions.
+# Docker Engine from the official Docker repository, pinned versions. Containers are run by Ansible (no Compose).
 
 - name: Remove the Docker packages of Ubuntu (they conflict with the official ones)
   ansible.builtin.apt:
@@ -37,15 +37,15 @@
         update_cache: true
       when: docker_repo is changed
 
-- name: Install Docker Engine {{ docker_version }} and the Compose plugin {{ docker_compose_version }}
+- name: Install Docker Engine {{ docker_version }}
   ansible.builtin.apt:
     name:
       - docker-ce={{ docker_version }}
       - docker-ce-cli={{ docker_version }}
       - containerd.io={{ docker_containerd_version }}
       - docker-buildx-plugin={{ docker_buildx_version }}
-      - docker-compose-plugin={{ docker_compose_version }}
     state: present
+    install_recommends: false   # otherwise apt also installs the Compose plugin, which is not used
     update_cache: true
     cache_valid_time: 3600
     allow_change_held_packages: true   # a new pinned version replaces the held one

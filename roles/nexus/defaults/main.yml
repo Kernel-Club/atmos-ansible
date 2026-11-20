@@ -1,6 +1,6 @@
 # Defaults of the nexus role. Version in group_vars/all/versions.yml.
 
-nexus_dir: /opt/nexus
+nexus_container: nexus
 nexus_image: sonatype/nexus3:{{ nexus_version }}
 
 # Ports nexus_http_port and nexus_registry_port (group_vars/all/platform.yml) are published
@@ -12,7 +12,6 @@ nexus_memory_limit: 2g
 nexus_jvm_options: -Xms1g -Xmx1g -XX:MaxDirectMemorySize=512m
 
 # REST API and admin account. The password comes from Ansible Vault.
-nexus_container: nexus-nexus-1
 nexus_api: http://127.0.0.1:{{ nexus_http_port }}/service/rest/v1
 nexus_admin_password: "{{ vault_nexus_admin_password }}"
 

@@ -1,4 +1,4 @@
-# Traefik as a Docker Compose service in the host network on nexus-traefik.
+# Traefik as a Docker container in the host network on nexus-traefik.
 
 - name: Create the Traefik directories
   ansible.builtin.file:
@@ -32,16 +32,17 @@
     dest: "{{ traefik_dir }}/dynamic/routes.yml"
     mode: "0644"
 
-- name: Place the Compose file
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ traefik_dir }}/docker-compose.yml"
-    mode: "0644"
-
-- name: Start Traefik (docker compose up)
-  community.docker.docker_compose_v2:
-    project_src: "{{ traefik_dir }}"
-    state: present
+- name: Start the Traefik container
+  community.docker.docker_container:
+    name: "{{ traefik_container }}"
+    image: "{{ traefik_image }}"
+    restart_policy: unless-stopped
+    network_mode: host    # ports on the server itself, so ufw applies
+    volumes:
+      - "{{ traefik_dir }}/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "{{ traefik_dir }}/dynamic:/etc/traefik/dynamic:ro"
+      - "{{ traefik_dir }}/certs:/etc/traefik/certs:ro"
+    memory: "{{ traefik_memory_limit }}"
 
 - name: Allow HTTP and HTTPS from the home network
   community.general.ufw:
