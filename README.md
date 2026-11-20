@@ -113,6 +113,14 @@ Names, hosts and ports are defined once in `group_vars/all/platform.yml` and `re
 
 Nexus users: `jenkins-push` (push and pull) and `cluster-pull` (pull only) on the repository `atmos-docker`; passwords in Ansible Vault. Nexus Community has no "keep the last N versions" cleanup: old tags are removed by hand; weekly tasks delete unused manifests and compact the blob store.
 
+## Jenkins platform
+
+`roles/jenkins` deploys the platform defined in [atmos-jenkins](https://github.com/Kernel-Club/atmos-jenkins): it clones the tag set in `jenkins_platform_version` (`group_vars/all/versions.yml`), builds the image `atmos-jenkins:<commit>` on `jenkins` and runs the container in the host network with the Docker socket of the server.
+
+- **New platform version:** tag `atmos-jenkins`, set `jenkins_platform_version` to the tag, run `ansible-playbook site.yml --tags jenkins`. A branch name can be set there to test before a release.
+- **Secrets:** `jenkins_secrets` in `roles/jenkins/defaults/main.yml` maps each `${NAME}` of the JCasC file to a value in Ansible Vault. Ansible places them in `/opt/jenkins/secrets` (read-only in the container as `/run/secrets`) and restarts Jenkins when a value changes.
+- **After a rebuild of `jenkins`:** configuration and credentials come back by themselves; the build history is lost.
+
 ## Certificates
 
 `roles/pki` creates on the Mac, in `~/.atmos/pki` (outside the repository):
@@ -148,7 +156,7 @@ Platform passwords are stored only encrypted with Ansible Vault (`group_vars/all
 | Repository | Role |
 |---|---|
 | [atmos-dev](https://github.com/Kernel-Club/atmos-dev) | Application and on-premise docs (`docs/on-premise/`) |
-| [atmos-jenkins](https://github.com/Kernel-Club/atmos-jenkins) | CI pipeline |
+| [atmos-jenkins](https://github.com/Kernel-Club/atmos-jenkins) | Jenkins platform: image, plugins, configuration as code |
 | [atmos-k8s](https://github.com/Kernel-Club/atmos-k8s) | Everything inside the cluster: Helm chart, Flux, monitoring |
 
 Branching: `main` + `feature/*` / `fix/*` with a Pull Request ([branching model](https://github.com/Kernel-Club/atmos-dev/blob/develop/docs/on-premise/branching-model.md)).
