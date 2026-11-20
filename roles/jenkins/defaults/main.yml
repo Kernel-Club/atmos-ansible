@@ -9,6 +9,7 @@ jenkins_repo: https://github.com/Kernel-Club/atmos-jenkins.git
 # Secrets for JCasC: name in Jenkins (${NAME}) -> value from Ansible Vault.
 jenkins_secrets:
   JENKINS_ADMIN_PASSWORD: "{{ vault_jenkins_admin_password }}"
+  NEXUS_PUSH_PASSWORD: "{{ vault_nexus_push_password }}"
 
 # Memory: container limit and JVM heap inside it. Image builds run in separate containers.
 jenkins_memory_limit: 1g
