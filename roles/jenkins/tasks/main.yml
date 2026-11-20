@@ -1,4 +1,4 @@
-# Jenkins platform from atmos-jenkins, built on the server and run with Docker Compose in the host network.
+# Jenkins platform from atmos-jenkins, built on the server and run as a Docker container in the host network.
 
 - name: Create the Jenkins directory
   ansible.builtin.file:
@@ -29,12 +29,6 @@
     build:
       path: "{{ jenkins_src_dir }}"
 
-- name: Place the Compose file
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: "{{ jenkins_dir }}/docker-compose.yml"
-    mode: "0644"
-
 - name: Create the secrets directory
   ansible.builtin.file:
     path: "{{ jenkins_dir }}/secrets"
@@ -54,10 +48,19 @@
   no_log: true
   notify: Restart Jenkins
 
-- name: Start Jenkins (docker compose up)
-  community.docker.docker_compose_v2:
-    project_src: "{{ jenkins_dir }}"
-    state: present
+- name: Start the Jenkins container
+  community.docker.docker_container:
+    name: "{{ jenkins_container }}"
+    image: "{{ jenkins_image }}"
+    restart_policy: unless-stopped
+    network_mode: host    # the port is on the server itself, so ufw applies
+    env:
+      JAVA_OPTS: "{{ jenkins_java_opts }}"
+      JENKINS_OPTS: "--httpPort={{ jenkins_port }}"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - "{{ jenkins_dir }}/secrets:/run/secrets:ro"   # read by JCasC as ${NAME}
+    memory: "{{ jenkins_memory_limit }}"
 
 - name: Wait until Jenkins answers
   ansible.builtin.uri:

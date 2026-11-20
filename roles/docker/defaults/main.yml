@@ -5,7 +5,6 @@ docker_packages:
   - docker-ce-cli
   - containerd.io
   - docker-buildx-plugin
-  - docker-compose-plugin
 
 # /etc/docker/daemon.json: rotate container logs, so they cannot fill the disk.
 docker_daemon_options:

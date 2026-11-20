@@ -2,6 +2,7 @@
 # Version of the platform in group_vars/all/versions.yml.
 
 jenkins_dir: /opt/jenkins
+jenkins_container: jenkins
 jenkins_src_dir: "{{ jenkins_dir }}/platform"
 jenkins_repo: https://github.com/Kernel-Club/atmos-jenkins.git
 

@@ -1,6 +1,7 @@
 # Defaults of the traefik role (reverse proxy on traefik_host). Version in group_vars/all/versions.yml.
 
-traefik_dir: /opt/traefik
+traefik_dir: /opt/traefik          # configuration and certificates, mounted read-only
+traefik_container: traefik
 traefik_image: traefik:{{ traefik_version }}
 traefik_memory_limit: 128m
 
