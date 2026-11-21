@@ -69,6 +69,7 @@
     groups:
       - "{{ jenkins_docker_socket.stat.gid }}"        # the jenkins user may use the socket
     memory: "{{ jenkins_memory_limit }}"
+  register: jenkins_container_result
 
 - name: Wait until Jenkins answers
   ansible.builtin.uri:
@@ -80,6 +81,27 @@
   retries: 30
   delay: 10
   changed_when: false
+
+# Jenkins lists the job folders before JCasC creates the jobs, so a job created at the first
+# start of a new container is loaded only at the next start: restart once, then wait again.
+- name: Restart Jenkins once after the container was created
+  community.docker.docker_container:
+    name: "{{ jenkins_container }}"
+    state: started
+    restart: true
+  when: jenkins_container_result is changed
+
+- name: Wait until Jenkins answers after the restart
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ jenkins_port }}/login
+    status_code: [200, 403]
+  register: jenkins_status
+  check_mode: false   # read-only, so it also runs with --check
+  until: jenkins_status.status in [200, 403]
+  retries: 30
+  delay: 10
+  changed_when: false
+  when: jenkins_container_result is changed
 
 - name: Allow the Jenkins port only from Traefik
   community.general.ufw:
