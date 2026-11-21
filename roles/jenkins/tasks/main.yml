@@ -48,6 +48,10 @@
   no_log: true
   notify: Restart Jenkins
 
+# Before the container starts: it mounts the registry CA of this server.
+- name: Trust the private CA (registry and system)
+  ansible.builtin.import_tasks: registry.yml
+
 - name: Read the group of the Docker socket (builds run through it)
   ansible.builtin.stat:
     path: /var/run/docker.sock
@@ -66,6 +70,7 @@
       - jenkins_home:/var/jenkins_home
       - "{{ jenkins_dir }}/secrets:/run/secrets:ro"   # read by JCasC as ${NAME}
       - /var/run/docker.sock:/var/run/docker.sock     # Docker of this server: build containers
+      - /etc/docker/certs.d:/etc/docker/certs.d:ro    # the Docker CLI trusts the registry CA too
     groups:
       - "{{ jenkins_docker_socket.stat.gid }}"        # the jenkins user may use the socket
     memory: "{{ jenkins_memory_limit }}"
@@ -110,6 +115,3 @@
     port: "{{ jenkins_port | string }}"
     src: "{{ hostvars[traefik_host].ansible_host }}"
     comment: Jenkins through Traefik
-
-- name: Trust the private CA (registry and system)
-  ansible.builtin.import_tasks: registry.yml
