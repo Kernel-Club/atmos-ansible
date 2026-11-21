@@ -119,7 +119,8 @@ Nexus users: `jenkins-push` (push and pull) and `cluster-pull` (pull only) on th
 
 - **New platform version:** tag `atmos-jenkins`, set `jenkins_platform_version` to the tag, run `ansible-playbook site.yml --tags jenkins`. A branch name can be set there to test before a release.
 - **Secrets:** `jenkins_secrets` in `roles/jenkins/defaults/main.yml` maps each `${NAME}` of the JCasC file to a value in Ansible Vault. Ansible places them in `/opt/jenkins/secrets` (read-only in the container as `/run/secrets`) and restarts Jenkins when a value changes.
-- **After a rebuild of `jenkins`:** configuration and credentials come back by themselves; the build history is lost.
+- **New container** (new platform version or new server): Ansible restarts Jenkins once, because Jenkins loads the jobs created by JCasC only at the next start.
+- **After a rebuild of `jenkins`:** configuration, credentials and the job come back by themselves; the build history is lost.
 
 ## Certificates
 
@@ -143,7 +144,7 @@ Renew the server certificate before it expires: delete `atmos.lan.crt` and run `
 
 | Issue | What to do |
 |---|---|
-| A VM hangs at boot: `vagrant up` times out, the console shows `rcu_preempt detected expedited stalls on CPUs` (VirtualBox vCPU stall) | `vagrant halt -f <server>`, then `vagrant up` |
+| A VM hangs at boot: `vagrant up` times out, the console shows `rcu_preempt detected expedited stalls on CPUs` (VirtualBox vCPU stall) | `vagrant halt -f <server>`, then `vagrant up`; if this happened while the server was created, also `vagrant provision <server>` (Vagrant skips the provisioners after the hang, SSH then asks for a password) |
 | Nexus Community sends daily telemetry; after 30 days without it the instance becomes read-only | Keep outgoing internet access on `nexus-traefik` |
 | Ansible reports `Host key verification failed` after a server was recreated | `ssh-keygen -R <address>`, connect once |
 
