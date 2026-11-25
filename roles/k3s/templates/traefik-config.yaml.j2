@@ -1,0 +1,19 @@
+# Managed by Ansible (roles/k3s). Values on top of the Traefik that k3s installs itself:
+# k3s watches /var/lib/rancher/k3s/server/manifests and applies this file.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # Memory as in the RAM table of docs/on-premise/architecture.md; CPU request only, no CPU limit.
+    resources:
+      requests:
+        cpu: {{ k3s_traefik_cpu_request }}
+        memory: {{ k3s_traefik_memory }}
+      limits:
+        memory: {{ k3s_traefik_memory }}
+    # Traefik is planned in the RAM of the control-plane node.
+    nodeSelector:
+      kubernetes.io/hostname: {{ groups['k3s_server'][0] }}

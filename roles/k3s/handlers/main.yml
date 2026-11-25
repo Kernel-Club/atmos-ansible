@@ -1,0 +1,10 @@
+- name: Update the system CA certificates
+  ansible.builtin.command: update-ca-certificates
+  changed_when: true
+
+# Restart only when k3s was already installed before this run: a fresh install starts with the new config anyway.
+- name: Restart k3s
+  ansible.builtin.systemd_service:
+    name: "{{ 'k3s' if inventory_hostname in groups['k3s_server'] else 'k3s-agent' }}"
+    state: restarted
+  when: k3s_installed.rc == 0

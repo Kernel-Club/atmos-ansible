@@ -61,6 +61,7 @@ Layers: Vagrant on the host PC creates the VMs, Ansible on the Mac configures ev
 | `roles/nexus/` | `nexus-traefik`: Nexus container, admin password, Docker repository, maintenance tasks, push and pull users |
 | `roles/traefik/` | `nexus-traefik`: Traefik container, HTTPS routes for Jenkins, Nexus and the registry |
 | `roles/jenkins/` | `jenkins`: Jenkins container built from a pinned version of `atmos-jenkins`, secrets from Ansible Vault, trust of the private CA |
+| `roles/k3s/` | `k8s-cp` (server), `k8s-w1` (agent): pinned k3s, `ufw` ports of the cluster, trust of the private CA, access to the registry, Traefik limits, kubeconfig on the Mac |
 | `site.yml` | Applies everything in order; one tag per play |
 | `vault-pass.sh` | Reads the Ansible Vault password from the macOS Keychain |
 
@@ -75,6 +76,7 @@ Layers: Vagrant on the host PC creates the VMs, Ansible on the Mac configures ev
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
 | Router | DHCP pool outside the server addresses .51–.54; DHCP reservations for the Mac and the host PC |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
+| Mac | kubectl 1.37.2 and Helm 4.3.2, pinned with `brew pin`; Homebrew before Docker Desktop in `PATH` (Docker Desktop ships its own kubectl) |
 | Mac | SSH key `~/.ssh/atmos_admin` for the host PC and the servers |
 | Mac | Ansible Vault password in the macOS Keychain (service `atmos-ansible-vault`); a backup copy outside the Mac |
 | Mac | Backup of `~/.atmos/pki/ca.key` and `ca.crt` outside the Mac (created by `site.yml` on the first run) |
@@ -89,7 +91,7 @@ vagrant halt k8s-w1 && vagrant halt k8s-cp && vagrant halt jenkins && vagrant ha
 # Mac
 ansible-playbook site.yml --ask-become-pass                       # configure the Mac and all servers
 ansible-playbook site.yml --check --diff --ask-become-pass        # show the changes, change nothing
-ansible-playbook site.yml --tags traefik                          # one part only (tags: mac, pki, common, docker, nexus, traefik, jenkins)
+ansible-playbook site.yml --tags traefik                          # one part only (tags: mac, pki, common, docker, nexus, traefik, jenkins, k3s)
 ansible-playbook site.yml --limit k8s-w1                          # one server only
 ansible all -m ping                                               # access check
 ```
@@ -108,6 +110,7 @@ ansible all -m ping                                               # access check
 | `https://jenkins.atmos.lan` | Traefik on `nexus-traefik` → Jenkins `:8080` on `jenkins` | home network |
 | `https://nexus.atmos.lan` | Traefik → Nexus (only on `127.0.0.1:8081`) | home network |
 | `nexus.atmos.lan:5000` | Traefik → Nexus Docker registry (only on `127.0.0.1:8082`) | `jenkins`, cluster nodes |
+| `https://192.168.0.51:6443` | Kubernetes API on `k8s-cp` | the Mac, cluster nodes |
 
 Names, hosts and ports are defined once in `group_vars/all/platform.yml` and `registry.yml`. The Mac gets the names in `/etc/hosts`; the servers get only the registry name.
 
@@ -122,13 +125,23 @@ Nexus users: `jenkins-push` (push and pull) and `cluster-pull` (pull only) on th
 - **New container** (new platform version or new server): Ansible restarts Jenkins once, because Jenkins loads the jobs created by JCasC only at the next start.
 - **After a rebuild of `jenkins`:** configuration, credentials and the job come back by themselves; the build history is lost.
 
+## Cluster (k3s)
+
+`roles/k3s` installs k3s `k3s_version` (`group_vars/all/versions.yml`) with the installer of exactly that version: first the server on `k8s-cp`, then the agent on `k8s-w1`, which joins with the token of the server. The installer runs only when another version or none is installed.
+
+- **Network:** k3s uses the bridged adapter (`eth1`); `eth0` is the Vagrant NAT with the same address on every VM. `ufw` allows the cluster ports only between the nodes, and the API also from the Mac.
+- **Registry:** `/etc/rancher/k3s/registries.yaml` on both nodes: the read-only user `cluster-pull` and the private CA. `coredns-custom` adds `nexus.atmos.lan` for the pods, which do not read `/etc/hosts` of the node.
+- **Traefik of k3s:** memory and node set in a `HelmChartConfig` in `/var/lib/rancher/k3s/server/manifests`.
+- **Secrets:** the join token, the registry password and the kubeconfig are handled with `no_log`; files `0600`.
+- **kubectl on the Mac:** Ansible writes `~/.kube/atmos.yaml` (context `atmos`, address of `k8s-cp`). Once, in fish: `set -Ux KUBECONFIG $HOME/.kube/config:$HOME/.kube/atmos.yaml`, then `kubectl config use-context atmos`.
+
 ## Certificates
 
 `roles/pki` creates on the Mac, in `~/.atmos/pki` (outside the repository):
 
 | File | Valid until | Used by |
 |---|---|---|
-| `ca.crt` / `ca.key` — Atmos Root CA | 2036-11-15 | trusted by the Mac, Docker on `jenkins` (and later the cluster and Flux); the key never leaves the Mac |
+| `ca.crt` / `ca.key` — Atmos Root CA | 2036-11-15 | trusted by the Mac, Docker on `jenkins` and the cluster nodes (later also Flux); the key never leaves the Mac |
 | `atmos.lan.crt` / `.key` — `*.atmos.lan`, `atmos.lan` (SAN) | **2029-02-20** | Traefik |
 
 Check the dates: `openssl x509 -in ~/.atmos/pki/atmos.lan.crt -noout -enddate`.

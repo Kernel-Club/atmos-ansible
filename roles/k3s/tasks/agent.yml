@@ -1,0 +1,41 @@
+# Worker on k8s-w1: joins the server with the token of the server.
+
+- name: Read the join token from the server
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  register: k3s_server_token
+  no_log: true
+
+- name: Place the join token
+  ansible.builtin.copy:
+    content: "{{ k3s_server_token.content | b64decode }}"
+    dest: "{{ k3s_token_file }}"
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart k3s
+
+- name: Install the k3s agent {{ k3s_version }} (only when another version or none is installed)
+  ansible.builtin.command: "{{ k3s_install_script }}"
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: agent
+  when: k3s_version not in k3s_installed.stdout | default('')
+  changed_when: true
+
+- name: Start the k3s agent and enable it at boot
+  ansible.builtin.systemd_service:
+    name: k3s-agent
+    state: started
+    enabled: true
+
+- name: Wait until the node is Ready (checked on the server)
+  ansible.builtin.command: k3s kubectl get node {{ inventory_hostname }} -o 'jsonpath={.status.conditions[?(@.type=="Ready")].status}'
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  register: k3s_node_ready
+  until: k3s_node_ready.stdout == "True"
+  retries: 30
+  delay: 10
+  changed_when: false
+  check_mode: false

@@ -1,0 +1,56 @@
+# k3s: the server (control plane) on k3s_server, the agent (worker) on k3s_agent.
+
+- name: Read the installed k3s version
+  ansible.builtin.command: k3s --version
+  register: k3s_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false   # read-only, so it also runs with --check
+
+- name: Firewall
+  ansible.builtin.import_tasks: firewall.yml
+
+- name: Create the k3s configuration directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: "0755"
+
+- name: Place the k3s configuration
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0600"
+  notify: Restart k3s
+
+- name: Add the CA of the platform to the system trust store (registry nexus.atmos.lan)
+  ansible.builtin.copy:
+    src: "{{ pki_ca_cert }}"
+    dest: "{{ k3s_ca_file }}"
+    mode: "0644"
+  notify:
+    - Update the system CA certificates
+    - Restart k3s
+
+- name: Place the access to the registry (read-only user)
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/k3s/registries.yaml
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart k3s
+
+- name: Download the installer of the pinned k3s version
+  ansible.builtin.get_url:
+    url: "{{ k3s_install_script_url }}"
+    dest: "{{ k3s_install_script }}"
+    mode: "0755"
+
+- name: Server
+  ansible.builtin.import_tasks: server.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- name: Agent
+  ansible.builtin.import_tasks: agent.yml
+  when: inventory_hostname in groups['k3s_agent']

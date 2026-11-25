@@ -1,0 +1,64 @@
+# Control plane on k8s-cp.
+
+- name: Install the k3s server {{ k3s_version }} (only when another version or none is installed)
+  ansible.builtin.command: "{{ k3s_install_script }}"
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: server
+  when: k3s_version not in k3s_installed.stdout | default('')
+  changed_when: true
+
+- name: Start the k3s server and enable it at boot
+  ansible.builtin.systemd_service:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Wait until the node is Ready
+  ansible.builtin.command: k3s kubectl get node {{ inventory_hostname }} -o 'jsonpath={.status.conditions[?(@.type=="Ready")].status}'
+  register: k3s_node_ready
+  until: k3s_node_ready.stdout == "True"
+  retries: 30
+  delay: 10
+  changed_when: false
+  check_mode: false
+
+- name: Place the Traefik values (HelmChartConfig)
+  ansible.builtin.template:
+    src: traefik-config.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+    mode: "0600"
+
+- name: Place the registry name for the pods (coredns-custom)
+  ansible.builtin.template:
+    src: coredns-custom.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/coredns-custom.yaml
+    mode: "0600"
+
+# kubeconfig of the cluster admin for kubectl on the Mac. It holds the admin client key: no_log, 0600.
+- name: Read the kubeconfig of the server
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_kubeconfig
+  no_log: true
+
+- name: Create the kubectl directory on the Mac
+  ansible.builtin.file:
+    path: "{{ k3s_kubeconfig_mac | dirname }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Place the kubeconfig on the Mac (address of k8s-cp, context atmos)
+  ansible.builtin.copy:
+    content: >-
+      {{ k3s_kubeconfig.content | b64decode
+         | replace('https://127.0.0.1:' ~ k3s_api_port, 'https://' ~ k3s_api_host ~ ':' ~ k3s_api_port)
+         | regex_replace('(?m)^(\s*(- )?(name|cluster|user|current-context): )default$', '\1atmos') }}
+    dest: "{{ k3s_kubeconfig_mac }}"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  no_log: true
+  diff: false
