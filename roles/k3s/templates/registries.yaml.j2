@@ -1,0 +1,8 @@
+# Managed by Ansible (roles/k3s). containerd pulls from Nexus as the read-only user; read at k3s start.
+configs:
+  "{{ registry_address }}":
+    auth:
+      username: {{ k3s_registry_user }}
+      password: "{{ k3s_registry_password }}"
+    tls:
+      ca_file: {{ k3s_ca_file }}

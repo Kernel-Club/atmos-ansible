@@ -1,0 +1,39 @@
+# Ports of k3s (https://docs.k3s.io/installation/requirements#networking).
+# Only between the nodes; the API server also from the Mac (kubectl).
+
+- name: Allow the API server from the nodes and the Mac
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "6443"
+    src: "{{ item }}"
+    comment: k3s API server
+  loop: "{{ k3s_node_ips + admin_ips }}"
+  when: inventory_hostname in groups['k3s_server']
+
+- name: Allow the kubelet from the nodes
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "10250"
+    src: "{{ item }}"
+    comment: k3s kubelet
+  loop: "{{ k3s_node_ips }}"
+
+- name: Allow flannel VXLAN between the nodes
+  community.general.ufw:
+    rule: allow
+    proto: udp
+    port: "8472"
+    src: "{{ item }}"
+    comment: k3s flannel VXLAN
+  loop: "{{ k3s_node_ips }}"
+
+- name: Allow pods and services to reach the node
+  community.general.ufw:
+    rule: allow
+    src: "{{ item }}"
+    comment: k3s pods and services
+  loop:
+    - "{{ k3s_cluster_cidr }}"
+    - "{{ k3s_service_cidr }}"

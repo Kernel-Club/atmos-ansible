@@ -4,7 +4,8 @@
 # The order matters:
 #   1. the Mac: names in /etc/hosts and the CA (Traefik and jenkins copy the CA files from the Mac);
 #   2. common on all servers (firewall, metrics, registry name), then Docker;
-#   3. Nexus before Traefik (Traefik routes to it), Traefik before Jenkins (Jenkins is reached through it).
+#   3. Nexus before Traefik (Traefik routes to it), Traefik before Jenkins (Jenkins is reached through it);
+#   4. the k3s server before the agent (the agent joins the server).
 # Tags run one part only, for example: ansible-playbook site.yml --tags traefik
 
 - name: Mac - names of the platform
@@ -61,3 +62,17 @@
   become: true
   roles:
     - jenkins
+
+- name: Cluster - k3s server
+  hosts: k3s_server
+  tags: k3s
+  become: true
+  roles:
+    - k3s
+
+- name: Cluster - k3s agent
+  hosts: k3s_agent
+  tags: k3s
+  become: true
+  roles:
+    - k3s

@@ -1,0 +1,37 @@
+# Defaults of the k3s role (lightweight Kubernetes on k8s-cp and k8s-w1). Version in group_vars/all/versions.yml.
+
+# The VMs have two adapters: eth0 is the Vagrant NAT (the same 10.0.2.15 on every VM),
+# the bridged one has the address of the server. k3s must use the bridged one.
+k3s_interface: eth1
+
+# Installer of exactly this k3s version (not the moving get.k3s.io script).
+k3s_install_script_url: https://raw.githubusercontent.com/k3s-io/k3s/{{ k3s_version }}/install.sh
+k3s_install_script: /usr/local/lib/k3s-install.sh
+
+# Address of the API server (k8s-cp), used by the agent and in the kubeconfig of the Mac.
+k3s_api_host: "{{ hostvars[groups['k3s_server'][0]].ansible_host }}"
+k3s_api_port: 6443
+
+# Addresses of all k3s nodes, for the firewall rules between them.
+k3s_node_ips: "{{ groups['k3s'] | map('extract', hostvars, 'ansible_host') | list }}"
+
+# Default networks of k3s: pods (flannel) and services.
+k3s_cluster_cidr: 10.42.0.0/16
+k3s_service_cidr: 10.43.0.0/16
+
+# Join token of the agent, in its own file (0600) and not in config.yaml.
+k3s_token_file: /etc/rancher/k3s/agent-token
+
+# Traefik of k3s (cluster ingress): memory request = limit.
+k3s_traefik_memory: 200Mi
+k3s_traefik_cpu_request: 50m
+
+# Public CA certificate of the platform on the nodes (the key stays on the Mac).
+k3s_ca_file: /usr/local/share/ca-certificates/atmos-root-ca.crt
+
+# Read-only user of Nexus for the image pulls of the nodes (created by roles/nexus).
+k3s_registry_user: cluster-pull
+k3s_registry_password: "{{ vault_nexus_pull_password }}"
+
+# kubeconfig of the cluster on the Mac, apart from ~/.kube/config (Docker Desktop keeps its own context there).
+k3s_kubeconfig_mac: "{{ lookup('env', 'HOME') }}/.kube/atmos.yaml"

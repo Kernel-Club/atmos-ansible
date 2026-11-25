@@ -1,0 +1,14 @@
+# Managed by Ansible (roles/k3s). Pods do not read /etc/hosts of the node,
+# so the registry name is added to CoreDNS of the cluster (for Flux).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  registry.server: |
+    {{ registry_name }}:53 {
+      hosts {
+        {{ hostvars[registry_host].ansible_host }} {{ registry_name }}
+      }
+    }
