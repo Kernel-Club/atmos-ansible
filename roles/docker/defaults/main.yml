@@ -6,9 +6,13 @@ docker_packages:
   - containerd.io
   - docker-buildx-plugin
 
-# /etc/docker/daemon.json: rotate container logs, so they cannot fill the disk.
+# /etc/docker/daemon.json: rotate container logs, so they cannot fill the disk;
+# metrics of the Docker Engine for Prometheus (port of dockerd itself, so ufw applies).
 docker_daemon_options:
   log-driver: json-file
   log-opts:
     max-size: 10m
     max-file: "3"
+  metrics-addr: "0.0.0.0:{{ docker_metrics_port }}"
+
+docker_metrics_port: 9323

@@ -68,3 +68,12 @@
     name: docker
     state: started
     enabled: true
+
+- name: Allow the Docker metrics port from the cluster nodes (Prometheus)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ docker_metrics_port | string }}"
+    src: "{{ hostvars[item].ansible_host }}"
+    comment: Docker metrics for Prometheus
+  loop: "{{ groups['k3s'] }}"

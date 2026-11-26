@@ -1,4 +1,4 @@
-# Roles with privileges on the Docker repository, and the push and pull users.
+# Roles (privileges on the Docker repository, or other privileges by name) and the users.
 
 - name: Check the roles
   ansible.builtin.uri:
@@ -26,7 +26,7 @@
       id: "{{ item.item.id }}"
       name: "{{ item.item.id }}"
       description: "{{ item.item.description }}"
-      privileges: "{{ item.item.actions | map('regex_replace', '^', 'nx-repository-view-docker-' ~ nexus_docker_repository ~ '-') | list }}"
+      privileges: "{{ item.item.privileges if 'privileges' in item.item else (item.item.actions | map('regex_replace', '^', 'nx-repository-view-docker-' ~ nexus_docker_repository ~ '-') | list) }}"
       roles: []
     status_code: 200
   loop: "{{ nexus_role_checks.results }}"

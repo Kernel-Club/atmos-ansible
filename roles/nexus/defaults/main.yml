@@ -42,6 +42,9 @@ nexus_roles:
   - id: atmos-pull
     description: Pull images from {{ nexus_docker_repository }} (cluster, Flux)
     actions: [browse, read]
+  - id: atmos-metrics
+    description: Read the Prometheus metrics of Nexus (Prometheus in the cluster)
+    privileges: [nx-metrics-all]
 
 nexus_users:
   - id: jenkins-push
@@ -54,3 +57,8 @@ nexus_users:
     last_name: Pull
     role: atmos-pull
     password: "{{ vault_nexus_pull_password }}"
+  - id: prometheus-metrics
+    first_name: Prometheus
+    last_name: Metrics
+    role: atmos-metrics
+    password: "{{ vault_nexus_metrics_password }}"

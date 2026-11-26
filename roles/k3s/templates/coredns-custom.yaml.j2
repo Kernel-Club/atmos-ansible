@@ -1,5 +1,6 @@
 # Managed by Ansible (roles/k3s). Pods do not read /etc/hosts of the node,
-# so the registry name is added to CoreDNS of the cluster (for Flux).
+# so the names served by Traefik on nexus-traefik are added to CoreDNS of the cluster:
+# the registry (Flux, Prometheus for Nexus) and Jenkins (Prometheus).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,5 +11,11 @@ data:
     {{ registry_name }}:53 {
       hosts {
         {{ hostvars[registry_host].ansible_host }} {{ registry_name }}
+      }
+    }
+  jenkins.server: |
+    {{ jenkins_name }}:53 {
+      hosts {
+        {{ hostvars[traefik_host].ansible_host }} {{ jenkins_name }}
       }
     }

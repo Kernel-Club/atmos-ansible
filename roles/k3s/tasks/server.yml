@@ -29,11 +29,12 @@
     dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
     mode: "0600"
 
-- name: Place the registry name for the pods (coredns-custom)
+- name: Place the names served by Traefik for the pods (coredns-custom)
   ansible.builtin.template:
     src: coredns-custom.yaml.j2
     dest: /var/lib/rancher/k3s/server/manifests/coredns-custom.yaml
     mode: "0600"
+  notify: Restart CoreDNS
 
 # kubeconfig of the cluster admin for kubectl on the Mac. It holds the admin client key: no_log, 0600.
 - name: Read the kubeconfig of the server
