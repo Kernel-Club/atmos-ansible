@@ -142,7 +142,7 @@ Nexus users: `jenkins-push` (push and pull) and `cluster-pull` (pull only) on th
 
 | File | Valid until | Used by |
 |---|---|---|
-| `ca.crt` / `ca.key` — Atmos Root CA | 2036-11-15 | trusted by the Mac, Docker on `jenkins` and the cluster nodes (later also Flux); the key never leaves the Mac |
+| `ca.crt` / `ca.key` — Atmos Root CA | 2036-11-15 | trusted by the Mac, Docker on `jenkins`, the cluster nodes and Flux; the key never leaves the Mac |
 | `atmos.lan.crt` / `.key` — `*.atmos.lan`, `atmos.lan` (SAN) | **2029-02-20** | Traefik |
 
 Check the dates: `openssl x509 -in ~/.atmos/pki/atmos.lan.crt -noout -enddate`.
