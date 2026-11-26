@@ -8,3 +8,9 @@
     name: "{{ 'k3s' if inventory_hostname in groups['k3s_server'] else 'k3s-agent' }}"
     state: restarted
   when: k3s_installed.rc == 0
+
+# CoreDNS finds new *.server files of coredns-custom only at start. Not needed on a fresh install.
+- name: Restart CoreDNS
+  ansible.builtin.command: k3s kubectl rollout restart deployment coredns -n kube-system
+  changed_when: true
+  when: k3s_installed.rc == 0

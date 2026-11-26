@@ -74,6 +74,7 @@ Layers: Vagrant on the host PC creates the VMs, Ansible on the Mac configures ev
 | Host PC | OpenSSH Server: key login only (`PasswordAuthentication no`), firewall rule for port 22 only from the Mac, network profile Private |
 | Host PC | VirtualBox machine folder on drive D: (`VBoxManage setproperty machinefolder "D:\VirtualBox VMs"`); VM disks are dynamic, 64 GB each |
 | Host PC | A clone of this repository (only `git pull`, all changes on the Mac) |
+| Host PC | windows_exporter 0.32.1 (metrics of the PC for Prometheus), pinned with `winget pin`; firewall rule `windows_exporter from the k3s nodes`: TCP 9182 only from `k8s-cp` and `k8s-w1`, profile Private |
 | Router | DHCP pool outside the server addresses .51–.54; DHCP reservations for the Mac and the host PC |
 | Mac | Ansible 14.6.0 (core 2.21.6), pinned with `brew pin` |
 | Mac | kubectl 1.37.2 and Helm 4.3.2, pinned with `brew pin`; Homebrew before Docker Desktop in `PATH` (Docker Desktop ships its own kubectl) |

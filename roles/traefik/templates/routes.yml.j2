@@ -18,6 +18,22 @@ http:
       entryPoints: [registry]
       service: registry
       tls: {}
+    # Metrics of Jenkins answer without login, so only Prometheus in the cluster may read them.
+    # A longer rule wins over the jenkins router above.
+    jenkins-metrics:
+      rule: Host(`{{ jenkins_name }}`) && PathPrefix(`/prometheus`)
+      entryPoints: [websecure]
+      middlewares: [cluster-nodes-only]
+      service: jenkins
+      tls: {}
+
+  middlewares:
+    cluster-nodes-only:
+      ipAllowList:
+        sourceRange:
+{% for host in groups['k3s'] %}
+          - {{ hostvars[host].ansible_host }}
+{% endfor %}
 
   services:
     jenkins:

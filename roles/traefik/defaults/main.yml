@@ -4,6 +4,7 @@ traefik_dir: /opt/traefik          # configuration and certificates, mounted rea
 traefik_container: traefik
 traefik_image: traefik:{{ traefik_version }}
 traefik_memory_limit: 128m
+traefik_metrics_port: 9110         # the usual 8082 is taken by the Nexus registry on this server
 
 # Upstreams
 traefik_jenkins_url: http://{{ hostvars[jenkins_host].ansible_host }}:{{ jenkins_port }}

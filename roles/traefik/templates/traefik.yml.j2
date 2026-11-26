@@ -15,6 +15,14 @@ entryPoints:
     transport:
       respondingTimeouts:
         readTimeout: 0s         # large image layers can take longer than the default 60 s
+  metrics:
+    address: ":{{ traefik_metrics_port }}"   # only Prometheus metrics; ufw: cluster nodes only
+
+# Prometheus metrics with labels per entry point, router and service (Jenkins, Nexus, registry).
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addRoutersLabels: true
 
 providers:
   file:

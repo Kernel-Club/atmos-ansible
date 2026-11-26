@@ -61,3 +61,12 @@
     src: "{{ hostvars[item].ansible_host }}"
     comment: Docker registry (Traefik)
   loop: "{{ traefik_registry_clients }}"
+
+- name: Allow the Traefik metrics port from the cluster nodes (Prometheus)
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ traefik_metrics_port | string }}"
+    src: "{{ hostvars[item].ansible_host }}"
+    comment: Traefik metrics for Prometheus
+  loop: "{{ groups['k3s'] }}"
