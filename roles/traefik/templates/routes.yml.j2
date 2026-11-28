@@ -27,7 +27,7 @@ http:
       service: jenkins
       tls: {}
 
-    # Webhook of Flux (notification-controller in the cluster) that starts atmos-verify after a deploy.
+    # Webhook of Flux (notification-controller in the cluster) that starts develop-cd-checks after a deploy.
     # The token is checked by Jenkins; the path is reachable only from the cluster nodes as well.
     jenkins-webhook:
       rule: Host(`{{ jenkins_name }}`) && PathPrefix(`/generic-webhook-trigger`)

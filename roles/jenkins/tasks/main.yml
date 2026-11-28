@@ -66,7 +66,7 @@
     env:
       JAVA_OPTS: "{{ jenkins_java_opts }}"
       JENKINS_OPTS: "--httpPort={{ jenkins_port }}"
-      # Address of atmos.lan for the containers of atmos-verify (no DNS server in the home network).
+      # Address of atmos.lan for the containers of develop-cd-checks (no DNS server in the home network).
       ATMOS_APP_ADDRESS: "{{ hostvars[app_host].ansible_host }}"
     volumes:
       - jenkins_home:/var/jenkins_home
