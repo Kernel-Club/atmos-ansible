@@ -11,6 +11,7 @@ jenkins_secrets:
   JENKINS_ADMIN_PASSWORD: "{{ vault_jenkins_admin_password }}"
   NEXUS_PUSH_PASSWORD: "{{ vault_nexus_push_password }}"
   SONAR_TOKEN: "{{ vault_sonar_token }}"
+  VERIFY_WEBHOOK_TOKEN: "{{ vault_verify_webhook_token }}"   # Flux starts atmos-verify after a deploy
 
 # Memory: container limit and JVM heap inside it. Image builds run in separate containers.
 jenkins_memory_limit: 1g

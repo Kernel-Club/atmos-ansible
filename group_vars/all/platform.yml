@@ -4,6 +4,7 @@ atmos_domain: atmos.lan
 
 traefik_host: nexus-traefik         # inventory host of Traefik (HTTPS entry point)
 jenkins_host: jenkins               # inventory host of Jenkins
+app_host: k8s-w1                    # inventory host of Traefik in the cluster (atmos.lan)
 
 jenkins_name: "jenkins.{{ atmos_domain }}"
 jenkins_port: 8080

@@ -15,7 +15,7 @@ nexus_version: "3.98.1"
 traefik_version: "v3.7.19"
 
 # Jenkins platform: a version of atmos-jenkins (a branch while testing, a release tag after)
-jenkins_platform_version: v0.8.2
+jenkins_platform_version: v0.9.0
 
 # k3s (lightweight Kubernetes), release of the stable channel; kubectl on the Mac has the same minor version
 k3s_version: "v1.37.2+k3s1"

@@ -2,7 +2,7 @@
 # so Ansible writes them to /etc/hosts. The address is taken from the inventory.
 
 lan_names:
-  - host: k8s-w1                    # Traefik in the cluster
+  - host: "{{ app_host }}"          # Traefik in the cluster
     names: ["{{ atmos_domain }}", "grafana.{{ atmos_domain }}"]
   - host: "{{ traefik_host }}"      # Traefik in front of Jenkins and Nexus
     names: ["{{ jenkins_name }}", "{{ nexus_name }}"]
